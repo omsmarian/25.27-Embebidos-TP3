@@ -14,6 +14,7 @@
 
 #include "board.h"
 #include "cqueue.h"
+#include "debug.h"
 #include "hardware.h"
 #include "pisr.h"
 #include "uart.h"

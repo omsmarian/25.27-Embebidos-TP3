@@ -11,16 +11,13 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-//#include <I2C.h.bak>
 #include <math.h>
-//#include <old/i2c.h>
 
 #include "board.h"
 #include "debug.h"																// For measuring ISR time
 #include "I2C.h"
 #include "macros.h"
 #include "pisr.h"
-#include "timer.h"
 #include "sensor.h"
 
 /*******************************************************************************
@@ -288,8 +285,8 @@ P_DEBUG_TP_CLR
 
 static void processData (void)
 {
-	data.roll	= (angle_t)(atan2(accel_data.y,	accel_data.z)	* 180 / M_PI);
-	data.pitch	= (angle_t)(atan2(accel_data.x,	accel_data.z)	* 180 / M_PI);
+	data.roll	= (angle_t)(atan2(accel_data.x,	accel_data.z)	* 180 / M_PI);
+	data.pitch	= (angle_t)(atan2(accel_data.y,	accel_data.z)	* 180 / M_PI);
 	data.yaw	= (angle_t)(atan2(magn_data.z,	magn_data.x)	* 180 / M_PI);
 }
 

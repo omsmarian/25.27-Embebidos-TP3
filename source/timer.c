@@ -12,6 +12,7 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
+#include "debug.h"
 #include "timer.h"
 #include "pisr.h"
 

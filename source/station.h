@@ -22,6 +22,7 @@
  ******************************************************************************/
 
 #define DEVELOPMENT_MODE			1
+#define DEBUG_TP					1											// Debugging Test Points to measure ISR time
 
 #define GN							4											// Group number
 #define STATION_BASE_ID				0x100U
@@ -29,7 +30,6 @@
 #define STATIONS_MASK				0b000100000111
 
 #define DATA_MAX_SIZE				8											// Complete according to expected data size
-
 #define STATION_PERIOD_MS			1											// Station data rate in ms
 
 /*******************************************************************************
@@ -37,7 +37,7 @@
  ******************************************************************************/
 
 typedef enum {
-	STATION_1,
+	STATION_1 = 0,
 	STATION_2,
 	STATION_3,
 	STATION_4,

@@ -66,6 +66,20 @@ bool serialWriteStatus (void);
  */
 bool serialReadStatus (void);
 
+/**
+ * @brief Send data through serial port (blocking)
+ * @param data Data to be sent
+ * @param len Number of bytes to be sent
+ * @return Data was sent
+ */
+bool serialWriteDataBlocking (uchar_t* data, uint8_t len);
+
+/**
+ * @brief Read data from serial port (blocking)
+ * @return Data read
+ */
+uchar_t* serialReadDataBlocking (uint8_t* len);
+
 /*******************************************************************************
  ******************************************************************************/
 

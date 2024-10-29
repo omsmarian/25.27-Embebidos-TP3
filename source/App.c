@@ -12,11 +12,11 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <gpio.h>
 #include <string.h>
 #include <stdlib.h>
- 
+
 #include "board.h"
+#include "debug.h"
 #include "hardware.h"
 #include "macros.h"
 #include "protocol.h"
@@ -80,7 +80,8 @@ void App_Init (void)
 {
 	serialInit();
 	sensorInit();
-//	stationInit();
+	stationInit();
+//	debugInit();
 
 	timerInit();
 	timeout_station		= timerStart(TIM_STATION);
@@ -123,7 +124,8 @@ void App_Run (void)
 				if (status.roll || status.pitch || status.yaw)
 					data = *sensorGetAngleData();
 
-//				update[PITCH]	= update[YAW] = false;
+		//		update[PITCH]	= update[PITCH];
+
 				angles[ROLL]	= data.roll;
 				angles[PITCH]	= data.pitch;
 				angles[YAW]		= data.yaw;
@@ -131,7 +133,7 @@ void App_Run (void)
 				timeout_sensor = timerStart(TIM_SENSOR);
 			}
 
-			// updateIncoming();
+			 updateIncoming();
 
 			timeout_station = timerStart(TIM_STATION);
 		}
@@ -157,10 +159,10 @@ void updateOutgoing (uint8_t *_index, bool _update)								// Send data to the s
 		{
 			angle_data = (protocol_t){ id2Chars[*_index], angles[*_index] };
 			len = protocolPack(&angle_data, msg);
-//			s = (station_t){ GN - 1, msg, len };
-//			stationSend(&s);
+			s = (station_t){ GN, msg, len };
+			stationSend(&s);
 
-			sid = NUM2ASCII(GN - 1);
+			sid = NUM2ASCII(GN);
 			serialWriteData(&sid, 1);
 			serialWriteData(msg, len);
 			sid = '\n';
@@ -176,21 +178,23 @@ void updateOutgoing (uint8_t *_index, bool _update)								// Send data to the s
 
 void updateIncoming (void)														// Receive data from the serial port
 {
-//	uchar_t msg[PROTOCOL_DIGS];
-//	uint8_t len, sid;
-//	station_t s;
-//	protocol_t angle_data;
-//
-//	s = (station_t){ GN - 1, msg, PROTOCOL_DIGS };
-//	stationReceive(&s);
-//	if (s.len)
-//	{
-//		sid = NUM2ASCII(s.id);
-//		serialWriteData(&sid, 1);
-//		serialWriteData(s.data, s.len);
-//		// len = protocolPack(protocolUnpack(s.data, s.len), msg);
-//		// serialWriteData(msg, len);
-//	}
+	uchar_t msg[PROTOCOL_DIGS];
+	uint8_t len, sid;
+	station_t s;
+	protocol_t angle_data;
+
+	s = (station_t){ GN, msg, PROTOCOL_DIGS };
+	stationReceive(&s);
+	if (s.len)
+	{
+		sid = NUM2ASCII(s.id);
+		serialWriteData(&sid, 1);
+		serialWriteData(s.data, s.len);
+		sid = '\n';
+		serialWriteData(&sid, 1);
+		// len = protocolPack(protocolUnpack(s.data, s.len), msg);
+		// serialWriteData(msg, len);
+	}
 }
 
 /******************************************************************************/
