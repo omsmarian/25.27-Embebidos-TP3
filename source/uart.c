@@ -1,6 +1,6 @@
 /***************************************************************************//**
-  @file     magcard.c
-  @brief    UART Driver for K64F. Blocking, Non-Blocking and using FIFO feature
+  @file     uart.c
+  @brief    UART driver for K64F. Blocking, Non-Blocking and using FIFO feature
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín
                      - Wickham, Tomás
@@ -30,9 +30,6 @@
 #define UART_MAX_BAUDRATE					(__CORE_CLOCK__ / 16)
 #define UART_HAL_DEFAULT_BAUDRATE			9600
 #define UART_REG(id, reg)					(UART_Ptrs[id]->reg)
-
-#define REG_WRITE(type, reg, shift, mask)	(((type)(((type)(reg)) << (shift))) & (mask))
-//#define REG_READ(type, reg, shift, mask)	(((type)(((type)(reg)) & (mask))) >> (shift))
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
@@ -67,26 +64,26 @@ void configFIFO (uart_id_t id, uart_fifo_t fifo);
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static PORT_Type * const	PORT_Ptrs[]	=   PORT_BASE_PTRS;
-static uint32_t             PORT_Clks[]	= { SIM_SCGC5_PORTA_MASK,
-											SIM_SCGC5_PORTB_MASK,
-											SIM_SCGC5_PORTC_MASK,
-											SIM_SCGC5_PORTD_MASK,
-											SIM_SCGC5_PORTE_MASK };
-static UART_Type * const	UART_Ptrs[]	=   UART_BASE_PTRS;
-static uint32_t				UART_Clks[]	= { SIM_SCGC4_UART0_MASK,
-											SIM_SCGC4_UART1_MASK,
-											SIM_SCGC4_UART2_MASK,
-											SIM_SCGC4_UART3_MASK,
-											SIM_SCGC1_UART4_MASK,
-											SIM_SCGC1_UART5_MASK };
-static uint8_t const        UART_IRQn[]	=   UART_RX_TX_IRQS;
-static pin_t const			UART_PINS[]	= { UART0_RX_PIN, UART0_TX_PIN,
-										 	UART1_RX_PIN, UART1_TX_PIN,
-										 	UART2_RX_PIN, UART2_TX_PIN,
-										 	UART3_RX_PIN, UART3_TX_PIN,
-										 	UART4_RX_PIN, UART4_TX_PIN,
-										 	UART5_RX_PIN, UART5_TX_PIN };
+static PORT_Type* const	PORT_Ptrs[]	=   PORT_BASE_PTRS;
+static uint32_t const	PORT_Clks[]	= { SIM_SCGC5_PORTA_MASK,
+										SIM_SCGC5_PORTB_MASK,
+										SIM_SCGC5_PORTC_MASK,
+										SIM_SCGC5_PORTD_MASK,
+										SIM_SCGC5_PORTE_MASK };
+static UART_Type* const	UART_Ptrs[]	=   UART_BASE_PTRS;
+static uint32_t const	UART_Clks[]	= { SIM_SCGC4_UART0_MASK,
+										SIM_SCGC4_UART1_MASK,
+										SIM_SCGC4_UART2_MASK,
+										SIM_SCGC4_UART3_MASK,
+										SIM_SCGC1_UART4_MASK,
+										SIM_SCGC1_UART5_MASK };
+static uint8_t const	UART_IRQn[]	=   UART_RX_TX_IRQS;
+static pin_t const		UART_PINS[]	= { UART0_RX_PIN, UART0_TX_PIN,
+									 	UART1_RX_PIN, UART1_TX_PIN,
+									 	UART2_RX_PIN, UART2_TX_PIN,
+									 	UART3_RX_PIN, UART3_TX_PIN,
+									 	UART4_RX_PIN, UART4_TX_PIN,
+									 	UART5_RX_PIN, UART5_TX_PIN };
 
 static bool init[UART_CANT_IDS];
 static queue_id_t rx_queue[UART_CANT_IDS];

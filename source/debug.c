@@ -1,5 +1,5 @@
 /***************************************************************************//**
-  @file     debug.h
+  @file     debug.c
   @brief    Debugging test points for the K64F board
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín

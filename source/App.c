@@ -12,59 +12,27 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "adc.h"
 #include "board.h"
 #include "debug.h"
-#include "hardware.h"
 #include "macros.h"
-#include "protocol.h"
-#include "sensor.h"
 #include "serial.h"
-#include "station.h"
 #include "timer.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-enum {
-	TIM_STATION		= TIMER_MS2TICKS(STATION_PERIOD_MS),
-	TIM_SENSOR		= TIMER_MS2TICKS(SENSOR_PERIOD_MS),
-	TIM_UPDATE		= TIMER_MS2TICKS(50),										// Send data every 50ms if there is any change
-	TIM_NO_UPDATE	= TIMER_MS2TICKS(1000)										// Send data every 1s if there is no change
-};
-
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static bool init_sensor, update[AXIS_CANT] = { false, false, false };
-static uint8_t index_update, index_no_update;
-
-static const uchar_t id2Chars[] = { 'R', 'C', 'O' };							// Roll (Rolido), Pitch (Cabeceo), Yaw (Orientacion)
-static angle_t angles[AXIS_CANT] = { 0, 0, 0 };
-static sensor_t data;
-static sensor_status_t status;
-
-static ticks_t timeout_station, timeout_sensor, timeout_update, timeout_no_update;
-
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
-
-/**
- * @brief Update and send outgoing data
- * @param _index Poins (in update[]) to the axis to be checked for update
- * @param _update Update condition (value in update[])
- */
-void updateOutgoing (uint8_t *_index, bool _update);
-
-/**
- * @brief Receive and update incoming data
- */
-void updateIncoming (void);
 
 /*******************************************************************************
  *******************************************************************************
@@ -78,16 +46,11 @@ void updateIncoming (void);
  */
 void App_Init (void)
 {
+	adcInit(ADC0_ID, (adc_cfg_t){ ADC_PSC_x8, ADC_BITS_12, ADC_CYCLES_24, ADC_TAPS_1 });
 	serialInit();
-	sensorInit();
-	stationInit();
 //	debugInit();
 
 	timerInit();
-	timeout_station		= timerStart(TIM_STATION);
-	timeout_sensor		= timerStart(TIM_SENSOR);
-	timeout_update		= timerStart(TIM_UPDATE);
-	timeout_no_update	= timerStart(TIM_NO_UPDATE);
 }
 
 /**
@@ -96,48 +59,14 @@ void App_Init (void)
  */
 void App_Run (void)
 {
-	if (!init_sensor) { init_sensor = sensorConfigStatus(); }					// Needs to be done with interrupts enabled
-	else
-	{
-		if(timerExpired(timeout_station))										// Receive other stations data
-		{
-			if (timerExpired(timeout_sensor))									// Update own sensor data (without sending)
-			{
-				if (timerExpired(timeout_update))								// Send own station data
-				{
-					if(timerExpired(timeout_no_update))
-					{
-						updateOutgoing(&index_update, false);
-						timeout_no_update = timerStart(TIM_NO_UPDATE);
-					}
-					else
-						updateOutgoing(&index_no_update, true);
+	adcStart(ADC0_ID, ADC0_DP0_CHANNEL, ADC_MUX_A, true);
 
-					timeout_update = timerStart(TIM_UPDATE);
-				}
+	while (!adcIsReady(ADC0_ID, ADC_MUX_A));
 
-				status = *sensorGetStatus();
-				update[ROLL]	= status.roll;
-				update[PITCH]	= status.pitch;
-				update[YAW]		= status.yaw;
+	adc_data_t data = adcGetData(ADC0_ID, ADC_MUX_A);
+	adcClearInterruptFlag(ADC0_ID, ADC_MUX_A);
 
-				if (status.roll || status.pitch || status.yaw)
-					data = *sensorGetAngleData();
-
-		//		update[PITCH]	= update[PITCH];
-
-				angles[ROLL]	= data.roll;
-				angles[PITCH]	= data.pitch;
-				angles[YAW]		= data.yaw;
-
-				timeout_sensor = timerStart(TIM_SENSOR);
-			}
-
-			 updateIncoming();
-
-			timeout_station = timerStart(TIM_STATION);
-		}
-	}
+	serialWriteData((uchar_t*)&data, sizeof(adc_data_t));
 }
 
 /*******************************************************************************
@@ -146,55 +75,12 @@ void App_Run (void)
  *******************************************************************************
  ******************************************************************************/
 
-void updateOutgoing (uint8_t *_index, bool _update)								// Send data to the stations and serial port
+void updateOutgoing (void)														// Send data to the serial port
 {
-	uchar_t msg[PROTOCOL_DIGS];
-	uint8_t len, sid;
-	station_t s;
-	protocol_t angle_data;
-
-	for (uint8_t i = 0; i < AXIS_CANT; i++)
-	{
-		if (update[*_index] == _update)
-		{
-			angle_data = (protocol_t){ id2Chars[*_index], angles[*_index] };
-			len = protocolPack(&angle_data, msg);
-			s = (station_t){ GN, msg, len };
-			stationSend(&s);
-
-			sid = NUM2ASCII(GN);
-			serialWriteData(&sid, 1);
-			serialWriteData(msg, len);
-			sid = '\n';
-			serialWriteData(&sid, 1);
-
-			i = AXIS_CANT;
-		}
-
-		(*_index)++;
-		(*_index) %= AXIS_CANT;
-	}
 }
 
 void updateIncoming (void)														// Receive data from the serial port
 {
-	uchar_t msg[PROTOCOL_DIGS];
-	uint8_t len, sid;
-	station_t s;
-	protocol_t angle_data;
-
-	s = (station_t){ GN, msg, PROTOCOL_DIGS };
-	stationReceive(&s);
-	if (s.len)
-	{
-		sid = NUM2ASCII(s.id);
-		serialWriteData(&sid, 1);
-		serialWriteData(s.data, s.len);
-		sid = '\n';
-		serialWriteData(&sid, 1);
-		// len = protocolPack(protocolUnpack(s.data, s.len), msg);
-		// serialWriteData(msg, len);
-	}
 }
 
 /******************************************************************************/

@@ -13,8 +13,8 @@
  ******************************************************************************/
 
 #include "debug.h"
-#include "timer.h"
 #include "pisr.h"
+#include "timer.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE

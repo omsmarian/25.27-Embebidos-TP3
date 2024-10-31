@@ -13,9 +13,6 @@
 
 #include "board.h"
 #include "uart.h"
-#include "pisr.h"
-#include "cqueue.h"
-#include "timer.h"
 #include "serial.h"
 
 /*******************************************************************************

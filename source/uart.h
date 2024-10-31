@@ -1,6 +1,6 @@
 /***************************************************************************//**
   @file     uart.h
-  @brief    UART Driver for K64F. Blocking, Non-Blocking and using FIFO feature
+  @brief    UART driver for K64F. Blocking, Non-Blocking and using FIFO feature
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín
                      - Wickham, Tomás
@@ -15,8 +15,8 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
