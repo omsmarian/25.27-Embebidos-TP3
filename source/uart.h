@@ -1,6 +1,6 @@
 /***************************************************************************//**
   @file     uart.h
-  @brief    UART driver for K64F. Blocking, Non-Blocking and using FIFO feature
+  @brief    UART Driver for K64F. Blocking, Non-Blocking and using FIFO feature
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín
                      - Wickham, Tomás
@@ -15,10 +15,8 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <stdbool.h>
 #include <stdint.h>
-
-#include "cqueue.h"
+#include <stdbool.h>
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -26,7 +24,6 @@
 
 #define UART_MAX_IDS		UART_CANT_IDS
 #define UART_FREQUENCY_HZ	1500U
-#define UART_BUFFER_SIZE	QUEUE_MAX_SIZE
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS

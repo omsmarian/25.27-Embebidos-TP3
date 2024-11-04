@@ -12,9 +12,8 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "debug.h"
-#include "pisr.h"
 #include "timer.h"
+#include "pisr.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE

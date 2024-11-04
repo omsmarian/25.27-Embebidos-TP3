@@ -1,17 +1,13 @@
 /***************************************************************************//**
   @file     pisr.c
-  @brief    Periodic Interrupt Service Routine (PISR) Driver for K64F
-  @author   Group 4: - Oms, Mariano
-                     - Solari Raigoso, Agustín
-                     - Wickham, Tomás
-                     - Vieira, Valentin Ulises
+  @brief    Periodic Interrupt (PISR) driver
+  @author   Group 4
  ******************************************************************************/
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "debug.h"
 #include "hardware.h"
 #include "pisr.h"
 
@@ -52,8 +48,7 @@ bool pisrRegister (pisr_callback_t fun, unsigned int period)
 		SysTick->CTRL = 0x00;
 		SysTick->LOAD = SYSTICK_LOAD_INIT;
 		SysTick->VAL= 0x00;
-		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
-
+		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk|SysTick_CTRL_TICKINT_Msk|SysTick_CTRL_ENABLE_Msk;
 		init_flag = true;
 	}
 	
@@ -64,7 +59,7 @@ bool pisrRegister (pisr_callback_t fun, unsigned int period)
 		funArr[count++].counter = period;
 	}
 
-	return !init_flag;
+	return 0;
 }
 
 /*******************************************************************************

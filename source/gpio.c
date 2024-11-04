@@ -16,7 +16,6 @@
 #include <stdint.h>
 
 #include "board.h"
-#include "debug.h"
 #include "gpio.h"
 #include "hardware.h"
 #include "macros.h"

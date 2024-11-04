@@ -1,6 +1,6 @@
 /***************************************************************************//**
-  @file     uart.c
-  @brief    UART driver for K64F. Blocking, Non-Blocking and using FIFO feature
+  @file     magcard.c
+  @brief    UART Driver for K64F. Blocking, Non-Blocking and using FIFO feature
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín
                      - Wickham, Tomás
@@ -13,7 +13,7 @@
  ******************************************************************************/
 
 #include "board.h"
-#include "debug.h"
+#include "cqueue.h"
 #include "hardware.h"
 #include "pisr.h"
 #include "uart.h"
@@ -30,6 +30,9 @@
 #define UART_HAL_DEFAULT_BAUDRATE			9600
 #define UART_REG(id, reg)					(UART_Ptrs[id]->reg)
 
+#define REG_WRITE(type, reg, shift, mask)	(((type)(((type)(reg)) << (shift))) & (mask))
+//#define REG_READ(type, reg, shift, mask)	(((type)(((type)(reg)) & (mask))) >> (shift))
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -37,52 +40,52 @@
 /**
  * @brief UARTx ISR Handler (IRQ and Periodic)
  */
-static void handler (void);
+void handler (void);
 
 /**
  * @brief Update the queues with the received data
  * @param id UART ID
  */
-static void update (uart_id_t id);
+void update (uart_id_t id);
 
 /**
  * @brief Set the baudrate for UARTx
  * @param id UART ID
  * @param br Baudrate
  */
-static void setBaudRate (uart_id_t id, uint32_t br);
+void setBaudRate (uart_id_t id, uint32_t br);
 
 /**
  * @brief Configure the FIFO for UARTx
  * @param id UART ID
  * @param fifo FIFO configuration
  */
-static void configFIFO (uart_id_t id, uart_fifo_t fifo);
+void configFIFO (uart_id_t id, uart_fifo_t fifo);
 
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static PORT_Type* const	PORT_Ptrs[]	=   PORT_BASE_PTRS;
-static uint32_t const	PORT_Clks[]	= { SIM_SCGC5_PORTA_MASK,
-										SIM_SCGC5_PORTB_MASK,
-										SIM_SCGC5_PORTC_MASK,
-										SIM_SCGC5_PORTD_MASK,
-										SIM_SCGC5_PORTE_MASK };
-static UART_Type* const	UART_Ptrs[]	=   UART_BASE_PTRS;
-static uint32_t const	UART_Clks[]	= { SIM_SCGC4_UART0_MASK,
-										SIM_SCGC4_UART1_MASK,
-										SIM_SCGC4_UART2_MASK,
-										SIM_SCGC4_UART3_MASK,
-										SIM_SCGC1_UART4_MASK,
-										SIM_SCGC1_UART5_MASK };
-static uint8_t const	UART_IRQn[]	=   UART_RX_TX_IRQS;
-static pin_t const		UART_PINS[]	= { UART0_RX_PIN, UART0_TX_PIN,
-									 	UART1_RX_PIN, UART1_TX_PIN,
-									 	UART2_RX_PIN, UART2_TX_PIN,
-									 	UART3_RX_PIN, UART3_TX_PIN,
-									 	UART4_RX_PIN, UART4_TX_PIN,
-									 	UART5_RX_PIN, UART5_TX_PIN };
+static PORT_Type * const	PORT_Ptrs[]	=   PORT_BASE_PTRS;
+static uint32_t             PORT_Clks[]	= { SIM_SCGC5_PORTA_MASK,
+											SIM_SCGC5_PORTB_MASK,
+											SIM_SCGC5_PORTC_MASK,
+											SIM_SCGC5_PORTD_MASK,
+											SIM_SCGC5_PORTE_MASK };
+static UART_Type * const	UART_Ptrs[]	=   UART_BASE_PTRS;
+static uint32_t				UART_Clks[]	= { SIM_SCGC4_UART0_MASK,
+											SIM_SCGC4_UART1_MASK,
+											SIM_SCGC4_UART2_MASK,
+											SIM_SCGC4_UART3_MASK,
+											SIM_SCGC1_UART4_MASK,
+											SIM_SCGC1_UART5_MASK };
+static uint8_t const        UART_IRQn[]	=   UART_RX_TX_IRQS;
+static pin_t const			UART_PINS[]	= { UART0_RX_PIN, UART0_TX_PIN,
+										 	UART1_RX_PIN, UART1_TX_PIN,
+										 	UART2_RX_PIN, UART2_TX_PIN,
+										 	UART3_RX_PIN, UART3_TX_PIN,
+										 	UART4_RX_PIN, UART4_TX_PIN,
+										 	UART5_RX_PIN, UART5_TX_PIN };
 
 static bool init[UART_CANT_IDS];
 static queue_id_t rx_queue[UART_CANT_IDS];
@@ -241,7 +244,7 @@ __ISR__ UART3_RX_TX_IRQHandler (void) {	irq = UART3_ID; handler(); }
 __ISR__ UART4_RX_TX_IRQHandler (void) {	irq = UART4_ID; handler(); }
 __ISR__ UART5_RX_TX_IRQHandler (void) {	irq = UART5_ID; handler(); }
 
-static void handler (void)																// Separate so that it can be called from the PISR/timer as well
+void handler (void)																// Separate so that it can be called from the PISR/timer as well
 {
 #if DEBUG_UART
 P_DEBUG_TP_SET
@@ -260,7 +263,7 @@ P_DEBUG_TP_CLR
 #endif
 }
 
-static void update (uart_id_t id)
+void update (uart_id_t id)
 {
 	uint8_t count, status = UART_REG(id, S1);									// Always needed (clears status register)
 
@@ -275,7 +278,7 @@ static void update (uart_id_t id)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static void setBaudRate (uart_id_t id, uint32_t br)
+void setBaudRate (uart_id_t id, uint32_t br)
 {
 	uint8_t brfa;
 	uint16_t sbr;
@@ -302,7 +305,7 @@ static void setBaudRate (uart_id_t id, uint32_t br)
 	UART_REG(id, C4) = (UART_REG(id, C4) & ~UART_C4_BRFA_MASK) | UART_C4_BRFA(brfa);
 }
 
-static void configFIFO (uart_id_t id, uart_fifo_t fifo)
+void configFIFO (uart_id_t id, uart_fifo_t fifo)
 {
 	UART_REG(id, CFIFO) |= UART_CFIFO_RXFLUSH_MASK | UART_CFIFO_TXFLUSH_MASK;
 	if(fifo == UART_FIFO_RX_ENABLED || fifo == UART_FIFO_RX_TX_ENABLED)

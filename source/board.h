@@ -15,7 +15,7 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "gpio.h"
+#include <gpio.h>
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -38,8 +38,8 @@
 #define SW_INPUT_TYPE			INPUT_PULLUP
 
 // UART
-#define UART0_RX_PIN			PORTNUM2PIN(PB, 16)	// PTB16
-#define UART0_TX_PIN			PORTNUM2PIN(PB, 17)	// PTB17
+#define UART0_RX_PIN			PORTNUM2PIN(PB, 16)	// PTA1
+#define UART0_TX_PIN			PORTNUM2PIN(PB, 17)	// PTA2
 #define UART1_RX_PIN			PORTNUM2PIN(PE, 1)	// PTC3
 #define UART1_TX_PIN			PORTNUM2PIN(PE, 0)	// PTC4
 #define UART2_RX_PIN			PORTNUM2PIN(PD, 2)	// PTD2
@@ -50,6 +50,12 @@
 #define UART4_TX_PIN			PORTNUM2PIN(PE, 24)	// PTC15
 #define UART5_RX_PIN			PORTNUM2PIN(PE, 9)	// PTD8
 #define UART5_TX_PIN			PORTNUM2PIN(PE, 8)	// PTC9
+
+// FXOS8700CQ Sensor
+#define FXOS8700CQ_I2C_SCL_PIN	PORTNUM2PIN(PE, 24)	// PTB0
+#define FXOS8700CQ_I2C_SDA_PIN	PORTNUM2PIN(PE, 25)	// PTB1
+#define FXOS8700CQ_INT1_PIN		PORTNUM2PIN(PC, 6)	// PTC6
+#define FXOS8700CQ_INT2_PIN		PORTNUM2PIN(PC, 13)	// PTC6
 
 /*******************************************************************************
  ******************************************************************************/
