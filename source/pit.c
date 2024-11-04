@@ -12,6 +12,8 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
+#include <stdlib.h>
+
 #include "hardware.h"
 #include "pit.h"
 
@@ -30,20 +32,30 @@
  ******************************************************************************/
 
 typedef struct {
-	pit_callback_t callback;
+	callback_t callback;
 	uint32_t period;
 	uint32_t counter;
 } pit_t;
+
+/*******************************************************************************
+ * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
+/**
+ * @brief PIT interrupt handler
+ * @param id PIT peripheral to handle
+ */
+static void handler (pit_id_t id);
 
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
 static PIT_Type* const PIT_Ptrs[] = PIT_BASE_PTRS;
-static uint8_t const PIT_IRQn[] = PIT_IRQn;
+static uint8_t const PIT_IRQn[] = PIT_IRQS;
 
 static bool init_flags[PIT_CANT_IDS];
-static pit_t pit_callbacks[PIT_MAX_CALLBACKS][PIT_CANT];
+static pit_t pit_callbacks[PIT_MAX_CALLBACKS][PIT_CANT_IDS];
 static uint8_t pit_count = 0;
 
 /*******************************************************************************
@@ -52,7 +64,7 @@ static uint8_t pit_count = 0;
  *******************************************************************************
  ******************************************************************************/
 
-bool pitInit (pit_id_t id, pit_callback_t callback, uint32_t freq)
+bool PIT_Init (pit_id_t id, callback_t callback, uint32_t freq)
 {
 	bool status = false;
 
@@ -70,7 +82,7 @@ bool pitInit (pit_id_t id, pit_callback_t callback, uint32_t freq)
 		init_flags[id] = true;
 	}
 
-	if((pit_callbacks[pit_count][id].callback != NULL) && callback && (pit_count < PIT_CANT))
+	if((pit_callbacks[pit_count][id].callback != NULL) && callback && (pit_count < PIT_CANT_IDS))
 	{
         pit_callbacks[pit_count][id].callback = callback;
         pit_callbacks[pit_count][id].period = pit_callbacks[pit_count++][id].counter = PIT_HZ_TO_TICKS(freq);
@@ -88,12 +100,12 @@ bool pitInit (pit_id_t id, pit_callback_t callback, uint32_t freq)
 
 // ISR Functions ///////////////////////////////////////////////////////////////
 
-__ISR__ PIT0_IRQHandler (void) { pit(PIT_0); }
-__ISR__ PIT1_IRQHandler (void) { pit(PIT_1); }
-__ISR__ PIT2_IRQHandler (void) { pit(PIT_2); }
-__ISR__ PIT3_IRQHandler (void) { pit(PIT_3); }
+__ISR__ PIT0_IRQHandler (void) { handler(PIT0_ID); }
+__ISR__ PIT1_IRQHandler (void) { handler(PIT1_ID); }
+__ISR__ PIT2_IRQHandler (void) { handler(PIT2_ID); }
+__ISR__ PIT3_IRQHandler (void) { handler(PIT3_ID); }
 
-void pit (pit_id_t id)
+static void handler (pit_id_t id)
 {
 #if DEBUG_PIT
 P_DEBUG_TP_SET

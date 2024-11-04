@@ -12,8 +12,9 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
 
 #include "adc.h"
 #include "board.h"
@@ -29,6 +30,8 @@
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
+
+static ticks_t tim_adc;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
@@ -46,12 +49,18 @@
  */
 void App_Init (void)
 {
-	adcInit(ADC0_ID, (adc_cfg_t){ ADC_PSC_x8, ADC_BITS_12, ADC_CYCLES_24, ADC_TAPS_1 });
+	ADC_Init(ADC0_ID, (adc_cfg_t){ ADC_TRIGG_PDB, ADC_PSC_x1, ADC_BITS_12, true, ADC_CYCLES_24, ADC_TAPS_8, false });
+	ADC_Start(ADC0_ID, (adc_cfg_ch_t){ ADC_MUX_A, true, false, 0, NULL });
+
 	serialInit();
+
 //	debugInit();
 
 	timerInit();
+	tim_adc = timerStart(TIMER_MS2TICKS(1000));
 }
+
+//void ADC_PISR (void);
 
 /**
  * @brief Run the application
@@ -59,14 +68,26 @@ void App_Init (void)
  */
 void App_Run (void)
 {
-	adcStart(ADC0_ID, ADC0_DP0_CHANNEL, ADC_MUX_A, true);
+	static adc_mux_t mux = ADC_MUX_A;
+	char raw[30];
+	adc_data_t data = 0;
+	uint8_t len = 0;
 
-	while (!adcIsReady(ADC0_ID, ADC_MUX_A));
+	// ADC_Start(ADC0_ID, ADC_MUX_A, true, false, 0, NULL);
 
-	adc_data_t data = adcGetData(ADC0_ID, ADC_MUX_A);
-	adcClearInterruptFlag(ADC0_ID, ADC_MUX_A);
+	if(timerExpired(tim_adc) && ADC_IsReady(ADC0_ID, mux))
+	{
+		data = ADC_GetData(ADC0_ID, mux);
+		len = sprintf(raw, "%d\n", data);
 
-	serialWriteData((uchar_t*)&data, sizeof(adc_data_t));
+		// serialWriteData((uchar_t*)&raw, sizeof(raw));
+		serialWriteDataBlocking((uchar_t*)&raw, len);
+
+		tim_adc = timerStart(TIMER_MS2TICKS(1));
+
+		mux = (mux + 1) % ADC_CANT_MUXS;
+		ADC_Start(ADC0_ID, (adc_cfg_ch_t){ mux, true, false, 0, NULL });
+	}
 }
 
 /*******************************************************************************

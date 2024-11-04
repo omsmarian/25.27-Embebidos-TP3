@@ -53,13 +53,13 @@
 // Debugging test points ///////////////////////////////////////////////////////
 
 enum {
-	DEBUG_CAN		= 0,
+	DEBUG_ADC		= 0,
 	DEBUG_GPIO		= 0,
-	DEBUG_I2C		= 0,
+	DEBUG_PDB		= 0,
 	DEBUG_PISR		= 0,
-	DEBUG_SENSOR	= 0,
+	DEBUG_PIT		= 0,
 	DEBUG_TIMER		= 0,
-	DEBUG_UART		= 0,
+	DEBUG_UART		= 0
 };
 
 /*******************************************************************************

@@ -22,11 +22,13 @@
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define ADC0_DP0_CHANNEL	0x00
-
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
+
+typedef void (*callback_t)(void);
+typedef uint8_t adc_channel_t; // Channel 0-23
+typedef uint16_t adc_data_t; // Maximum resolution is 16 bits
 
 typedef enum {
 	ADC0_ID,
@@ -34,6 +36,26 @@ typedef enum {
 
 	ADC_CANT_IDS
 } adc_id_t;
+
+typedef enum {
+	ADC_TRIGG_PDB_EXT,
+	ADC_TRIGG_CMP0,
+	ADC_TRIGG_CMP1,
+	ADC_TRIGG_CMP2,
+	ADC_TRIGG_PIT0,
+	ADC_TRIGG_PIT1,
+	ADC_TRIGG_PIT2,
+	ADC_TRIGG_PIT3,
+	ADC_TRIGG_FTM0,
+	ADC_TRIGG_FTM1,
+	ADC_TRIGG_FTM2,
+	ADC_TRIGG_FTM3,
+	ADC_TRIGG_RTC_ALARM,
+	ADC_TRIGG_RTC_SECONDS,
+	ADC_TRIGG_LPTMR,
+	ADC_TRIGG_PDB,
+	ADC_TRIGG_SW
+} adc_trigger_t;
 
 typedef enum {
 	ADC_PSC_x1,
@@ -46,7 +68,7 @@ typedef enum {
 	ADC_BITS_8,
 	ADC_BITS_12,
 	ADC_BITS_10,
-	ADC_BITS_16,
+	ADC_BITS_16
 } adc_bits_t;
 
 typedef enum {
@@ -54,7 +76,7 @@ typedef enum {
 	ADC_CYCLES_16,
 	ADC_CYCLES_10,
 	ADC_CYCLES_6,
-	ADC_CYCLES_4,
+	ADC_CYCLES_SHORT
 } adc_cycles_t;
 
 typedef enum {
@@ -69,18 +91,26 @@ typedef enum {
 	ADC_MUX_A,
 	ADC_MUX_B,
 
-	ADC_MUX_CANT
+	ADC_CANT_MUXS
 } adc_mux_t;
 
 typedef struct {
-	adc_prescaler_t	prescaler;
-	adc_bits_t		resolution;
+	adc_trigger_t	trigg;
+	adc_prescaler_t	ps;
+	adc_bits_t		res; // Resolution
+	bool			speed; // Higher speed conversion clocks with 2 additional ADCK
 	adc_cycles_t	cycles;
 	adc_taps_t		hw_avg;
+	bool			pwr; // Power is reduced at the expense of maximum clock speed
 } adc_cfg_t;
 
-typedef uint8_t adc_channel_t; // Channel 0-23
-typedef uint16_t adc_data_t; // Maximum resolution is 16 bits
+typedef struct {
+	adc_mux_t		mux;
+	bool			ie; // Interrupt enable
+	bool			diff; // Differential mode
+	adc_channel_t	ch;
+	callback_t 		cb;
+} adc_cfg_ch_t;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -88,65 +118,42 @@ typedef uint16_t adc_data_t; // Maximum resolution is 16 bits
 
 /**
  * @brief Initialize the ADC peripheral
- * @param id: ADC peripheral to be initialized
- * @param config: Configuration for the ADC peripheral
+ * @param id ADC peripheral to be initialized
+ * @param cfg Configuration for the ADC peripheral
  */
-void adcInit (adc_id_t id, adc_cfg_t config);
+bool ADC_Init (adc_id_t id, adc_cfg_t cfg);
 
 /**
  * @brief Get the configuration of the ADC peripheral
- * @param id: ADC peripheral to get the configuration from
+ * @param id ADC peripheral to get the configuration from
  * @return Configuration of the ADC peripheral
  */
-adc_cfg_t* adcGetConfig (adc_id_t id);
-
-/**
- * @brief Check if an interrupt is pending
- * @param id: ADC peripheral to check
- * @param mux: Mux to check
- * @return True if an interrupt is pending, false otherwise
- */
-bool adcIsInterruptPending (adc_id_t id, adc_mux_t mux);
-
-/**
- * @brief Clear the interrupt flag
- * @param id: ADC peripheral to clear the interrupt flag
- * @param mux: Mux to clear the interrupt flag
- */
-void adcClearInterruptFlag (adc_id_t id, adc_mux_t mux);
-
-/**
- * @brief Calibrate the ADC peripheral
- * @param id: ADC peripheral to calibrate
- * @param mux: Mux to calibrate
- * @return True if calibration was successful, false otherwise
- */
-bool adcCalibrate (adc_id_t id, adc_mux_t mux);
+adc_cfg_t* ADC_GetConfig (adc_id_t id);
 
 /**
  * @brief Start an ADC conversion
- * @param id: ADC peripheral to start the conversion
- * @param ch: Channel to convert
- * @param mux: Mux to convert
- * @param ie: Enable interrupt
+ * @param id ADC peripheral to start the conversion
+ * @param mux SC1n and Rn register to use
+ * @param ie Enable interrupt
+ * @param ch Channel to convert
  */
-void adcStart (adc_id_t id, adc_channel_t ch, adc_mux_t mux, bool ie);
+bool ADC_Start (adc_id_t id, adc_cfg_ch_t cfg);
 
 /**
  * @brief Check if the ADC is ready
- * @param id: ADC peripheral to check
- * @param mux: Mux to check
+ * @param id ADC peripheral to check
+ * @param mux Mux to check
  * @return True if the ADC is ready, false otherwise
  */
-bool adcIsReady (adc_id_t id, adc_mux_t mux);
+bool ADC_IsReady (adc_id_t id, adc_mux_t mux);
 
 /**
  * @brief Get the data from the ADC
- * @param id: ADC peripheral to get the data from
- * @param mux: Mux to get the data from
+ * @param id ADC peripheral to get the data from
+ * @param mux Mux to get the data from
  * @return Data from the ADC
  */
-adc_data_t adcGetData (adc_id_t id, adc_mux_t mux);
+adc_data_t ADC_GetData (adc_id_t id, adc_mux_t mux);
 
 /*******************************************************************************
  ******************************************************************************/

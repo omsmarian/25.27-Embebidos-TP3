@@ -77,8 +77,8 @@
 
 #define M_PI					3.14159265358979323846
 
-#define REG_WRITE(type, reg, shift, mask)	(((type)(((type)(reg)) << (shift))) & (mask))
-#define REG_READ(type, reg, shift, mask)	(((type)(((type)(reg)) & (mask))) >> (shift))
+#define REG_WRITE(type, shift, mask, reg)	(((type)(((type)(reg)) << (shift))) & (mask))
+#define REG_READ(type, shift, mask, reg)	(((type)(((type)(reg)) & (mask))) >> (shift))
 
 /*******************************************************************************
  ******************************************************************************/

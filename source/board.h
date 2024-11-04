@@ -38,8 +38,8 @@
 #define SW_INPUT_TYPE			INPUT_PULLUP
 
 // UART
-#define UART0_RX_PIN			PORTNUM2PIN(PB, 16)	// PTA1
-#define UART0_TX_PIN			PORTNUM2PIN(PB, 17)	// PTA2
+#define UART0_RX_PIN			PORTNUM2PIN(PB, 16)	// PTB16
+#define UART0_TX_PIN			PORTNUM2PIN(PB, 17)	// PTB17
 #define UART1_RX_PIN			PORTNUM2PIN(PE, 1)	// PTC3
 #define UART1_TX_PIN			PORTNUM2PIN(PE, 0)	// PTC4
 #define UART2_RX_PIN			PORTNUM2PIN(PD, 2)	// PTD2
@@ -50,25 +50,6 @@
 #define UART4_TX_PIN			PORTNUM2PIN(PE, 24)	// PTC15
 #define UART5_RX_PIN			PORTNUM2PIN(PE, 9)	// PTD8
 #define UART5_TX_PIN			PORTNUM2PIN(PE, 8)	// PTC9
-
-// ADC
-#define ADC0_SE8_PIN			PORTNUM2PIN(PC, 0)	// PTC0
-#define ADC0_SE14_PIN			PORTNUM2PIN(PC, 1)	// PTC1
-#define ADC0_SE15_PIN			PORTNUM2PIN(PC, 2)	// PTC2
-#define ADC0_SE4b_PIN			PORTNUM2PIN(PD, 1)	// PTD1
-#define ADC0_SE5b_PIN			PORTNUM2PIN(PD, 5)	// PTD5
-#define ADC0_SE6b_PIN			PORTNUM2PIN(PD, 6)	// PTD6
-#define ADC0_SE7b_PIN			PORTNUM2PIN(PD, 7)	// PTD7
-#define ADC0_SE0_PIN			PORTNUM2PIN(PD, 0)	// PTD0
-#define ADC0_SE1_PIN			PORTNUM2PIN(PC, 16)	// PTC16
-#define ADC0_SE2_PIN			PORTNUM2PIN(PC, 17)	// PTC17
-#define ADC0_SE3_PIN			PORTNUM2PIN(PC, 18)	// PTC18
-#define ADC0_SE4a_PIN			PORTNUM2PIN(PC, 19)	// PTC19
-#define ADC0_SE5a_PIN			PORTNUM2PIN(PD, 8)	// PTD8
-#define ADC0_SE6a_PIN			PORTNUM2PIN(PD, 9)	// PTD9
-#define ADC0_SE7a_PIN			PORTNUM2PIN(PD, 10)	// PTD10
-#define ADC0_SE8_PIN			PORTNUM2PIN(PD, 11)	// PTD11
-#define ADC0_SE9_PIN			PORTNUM2PIN(PC, 9)	// PTC9
 
 /*******************************************************************************
  ******************************************************************************/

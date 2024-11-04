@@ -18,12 +18,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "cqueue.h"
+
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
 #define UART_MAX_IDS		UART_CANT_IDS
 #define UART_FREQUENCY_HZ	1500U
+#define UART_BUFFER_SIZE	QUEUE_MAX_SIZE
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS

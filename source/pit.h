@@ -24,14 +24,15 @@
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define PIT_FREQUENCY_HZ	1000U
+#define PIT_FREQUENCY_HZ	3000U
+#define PIT_HZ2TICKS(f)		(PIT_FREQUENCY_HZ / (f))
 #define PIT_MAX_CALLBACKS	8 // Per channel
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef void (*pit_callback_t)(void);
+typedef void (*callback_t)(void);
 
 typedef enum {
 	PIT0_ID,
@@ -54,7 +55,7 @@ typedef enum {
  * @return Initialization succeed
  * @note If the callback is NULL, the PIT channel is only initialized
  */
-bool pitInit(pit_id_t id, pit_callback_t fun, uint32_t freq);
+bool PIT_Init(pit_id_t id, callback_t fun, uint32_t freq);
 
 /*******************************************************************************
  ******************************************************************************/

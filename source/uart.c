@@ -13,7 +13,6 @@
  ******************************************************************************/
 
 #include "board.h"
-#include "cqueue.h"
 #include "debug.h"
 #include "hardware.h"
 #include "pisr.h"
@@ -38,27 +37,27 @@
 /**
  * @brief UARTx ISR Handler (IRQ and Periodic)
  */
-void handler (void);
+static void handler (void);
 
 /**
  * @brief Update the queues with the received data
  * @param id UART ID
  */
-void update (uart_id_t id);
+static void update (uart_id_t id);
 
 /**
  * @brief Set the baudrate for UARTx
  * @param id UART ID
  * @param br Baudrate
  */
-void setBaudRate (uart_id_t id, uint32_t br);
+static void setBaudRate (uart_id_t id, uint32_t br);
 
 /**
  * @brief Configure the FIFO for UARTx
  * @param id UART ID
  * @param fifo FIFO configuration
  */
-void configFIFO (uart_id_t id, uart_fifo_t fifo);
+static void configFIFO (uart_id_t id, uart_fifo_t fifo);
 
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -242,7 +241,7 @@ __ISR__ UART3_RX_TX_IRQHandler (void) {	irq = UART3_ID; handler(); }
 __ISR__ UART4_RX_TX_IRQHandler (void) {	irq = UART4_ID; handler(); }
 __ISR__ UART5_RX_TX_IRQHandler (void) {	irq = UART5_ID; handler(); }
 
-void handler (void)																// Separate so that it can be called from the PISR/timer as well
+static void handler (void)																// Separate so that it can be called from the PISR/timer as well
 {
 #if DEBUG_UART
 P_DEBUG_TP_SET
@@ -261,7 +260,7 @@ P_DEBUG_TP_CLR
 #endif
 }
 
-void update (uart_id_t id)
+static void update (uart_id_t id)
 {
 	uint8_t count, status = UART_REG(id, S1);									// Always needed (clears status register)
 
@@ -276,7 +275,7 @@ void update (uart_id_t id)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void setBaudRate (uart_id_t id, uint32_t br)
+static void setBaudRate (uart_id_t id, uint32_t br)
 {
 	uint8_t brfa;
 	uint16_t sbr;
@@ -303,7 +302,7 @@ void setBaudRate (uart_id_t id, uint32_t br)
 	UART_REG(id, C4) = (UART_REG(id, C4) & ~UART_C4_BRFA_MASK) | UART_C4_BRFA(brfa);
 }
 
-void configFIFO (uart_id_t id, uart_fifo_t fifo)
+static void configFIFO (uart_id_t id, uart_fifo_t fifo)
 {
 	UART_REG(id, CFIFO) |= UART_CFIFO_RXFLUSH_MASK | UART_CFIFO_TXFLUSH_MASK;
 	if(fifo == UART_FIFO_RX_ENABLED || fifo == UART_FIFO_RX_TX_ENABLED)
