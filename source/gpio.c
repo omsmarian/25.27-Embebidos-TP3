@@ -1,235 +1,357 @@
-/***************************************************************************//**
-  @file     gpio.h
-  @brief    Simple GPIO Pin services, similar to Arduino
-  @author   Group 4: - Oms, Mariano
-                     - Solari Raigoso, Agustín
-                     - Wickham, Tomás
-                     - Vieira, Valentin Ulises
- ******************************************************************************/
-
-/*******************************************************************************
- * INCLUDE HEADER FILES
- ******************************************************************************/
-
-#include <stdlib.h>
-#include <stdbool.h>
 #include <stdint.h>
-
-#include "board.h"
-#include "debug.h"
-#include "gpio.h"
-#include "hardware.h"
-#include "macros.h"
+#include <stdbool.h>
 #include "MK64F12.h"
+#include "gpio.h"
+#include "config.h"
 
-/*******************************************************************************
- * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
- ******************************************************************************/
+#define GPIO_MODE 1
 
-#define DEVELOPMENT_MODE	1
+enum pinnum2powerof2_t {
+	PIN0 = 1UL,
+	PIN1 = 2UL,
+	PIN2 = 4UL,
+	PIN3 = 8UL,
+	PIN4 = 16UL,
+	PIN5 = 32UL,
+	PIN6 = 64UL,
+	PIN7 = 128UL,
+	PIN8 = 256UL,
+	PIN9 = 512UL,
+	PIN10 = 1024UL,
+	PIN11 = 2048UL,
+	PIN12 = 4096UL,
+};
 
-#define PORTS_CANT			5	// A, B, C, D, E
-#define FUN_CANT			32	// Only 1 per PIN
+static pinIrqFun_t PORTA_CBs[32];
+static pinIrqFun_t PORTB_CBs[32];
+static pinIrqFun_t PORTC_CBs[32];
+static pinIrqFun_t PORTD_CBs[32];
+static pinIrqFun_t PORTE_CBs[32];
 
-/*******************************************************************************
- * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
- ******************************************************************************/
+void gpioMode (pin_t pin, uint8_t mode){
+	
+	/*	Asi seria con bit-banding
+	*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 10)) = 0;	//Gpio Mode on MUX
+	*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 9)) = 0;	//
+	*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 8)) = 1;	//
+	*/
 
-pinIrqFun_t irqFuns[PORTS_CANT][FUN_CANT] = { NULL };
+	//Lo hacemos con mascaras
+	bool filt_enable = mode & FILTER_ENABLE;
+	mode &= 3UL;
 
-/*******************************************************************************
- * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
- ******************************************************************************/
+	PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)] = (PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)] & ~PORT_PCR_MUX_MASK ) | PORT_PCR_MUX(GPIO_MODE);
 
-uint8_t PinBit2Num (uint32_t pin);
-
-/*******************************************************************************
- * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
- ******************************************************************************/
-
-static GPIO_Type * const    GPIO_Ports[]        =   GPIO_BASE_PTRS;
-static PORT_Type * const    PORT_Ports[]        =   PORT_BASE_PTRS;
-static uint32_t             SCSCGC5Ports_t[]    = { SIM_SCGC5_PORTA(HIGH),
-									  	  	        SIM_SCGC5_PORTB(HIGH),
-											        SIM_SCGC5_PORTC(HIGH),
-											        SIM_SCGC5_PORTD(HIGH),
-											        SIM_SCGC5_PORTE(HIGH) };
-static uint8_t const        PORT_IRQn[] 		=   PORT_IRQS;
-static uint8_t const        GPIO_IRQn[] 		= { PORT_eDisabled,
-									 	 	        PORT_eInterruptRising,
-											        PORT_eInterruptFalling,
-											        PORT_eInterruptEither };
-
-/*******************************************************************************
- *******************************************************************************
-                        GLOBAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
-
-void gpioMode (pin_t pin, uint8_t mode)
-{
-	PINData_t pin_data = { PIN2PORT(pin), PIN2NUM(pin) };
-	uint32_t * pin_PCR = &(PORT_Ports[pin_data.port]->PCR[pin_data.num]);
-	uint32_t * pin_PDDR = &(GPIO_Ports[pin_data.port]->PDDR);
-
-	SIM->SCGC5 |= SCSCGC5Ports_t[pin_data.port];
-	*pin_PCR |= PORT_PCR_MUX(PORT_mGPIO);
-
-	if (mode == OUTPUT)
-		*pin_PDDR |= (HIGH << (pin_data.num));
-	else
-	{
-		*pin_PDDR |= (LOW << (pin_data.num));
-
-		if (mode != INPUT)
-		{
-			*pin_PCR |= PORT_PCR_PE(HIGH);
-
-			if (mode == INPUT_PULLUP)
-				*pin_PCR |= PORT_PCR_PS(HIGH);
-			else
-				*pin_PCR |= PORT_PCR_PS(LOW);
-		}
-		else
-			*pin_PCR |= PORT_PCR_PE(LOW);
+	if (mode == OUTPUT){
+		*((uint32_t*)BITBAND_REGADDR(PORT2GPIOADDR(PIN2PORT(pin))->PDDR , PIN2NUM(pin))) = 1;
 	}
-}
-
-bool gpioIRQ (pin_t pin, uint8_t irqMode, pinIrqFun_t irqFun)
-{
-	bool status = true;
-
-	NVIC_EnableIRQ(PORT_IRQn[PIN2PORT(pin)]);
-	PORT_Ports[PIN2PORT(pin)]->PCR[PIN2NUM(pin)] |= PORT_PCR_IRQC(GPIO_IRQn[irqMode]);
-	if (PIN2NUM(pin) < FUN_CANT && irqFun != NULL)
-	{
-		irqFuns[PIN2PORT(pin)][PIN2NUM(pin)] = irqFun;
-		status = false;
+	else{
+		*((uint32_t*)BITBAND_REGADDR((PORT2GPIOADDR(PIN2PORT(pin))->PDDR) , PIN2NUM(pin))) = 0;
+		if(mode == INPUT_PULLUP){
+			*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 0)) = 1;	//0 es el bit del Pull Select
+			*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 1)) = 1;	//1 es el bit del Pull Enable
+		}
+		else if(mode == INPUT_PULLDOWN){
+			*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 0)) = 0;
+			*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 1)) = 1;
+		}
 	}
 
-	return status; // 0 = success
+	if (filt_enable)
+		*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 4)) = 1;
 }
 
-void gpioWrite (pin_t pin, bool value)
-{
-//	GPIO_Ports[PIN2PORT(pin)]->PDOR &= ~(HIGH<<PIN2NUM(pin)); // Clear bit
-//	GPIO_Ports[PIN2PORT(pin)]->PDOR |= (value<<PIN2NUM(pin)); // Change bit
-	if (value)
-		GPIO_Ports[PIN2PORT(pin)]->PSOR = (HIGH<<PIN2NUM(pin));
-	else
-		GPIO_Ports[PIN2PORT(pin)]->PCOR = (HIGH<<PIN2NUM(pin));
+bool gpioRead (pin_t pin){
+
+	return (BITBAND_REG32((PORT2GPIOADDR(PIN2PORT(pin))->PDIR) , PIN2NUM(pin)));
 }
 
-void gpioToggle (pin_t pin)
-{
-//	GPIO_Ports[PIN2PORT(pin)]->PDOR ^= (HIGH<<PIN2NUM(pin));
-	GPIO_Ports[PIN2PORT(pin)]->PTOR = (HIGH<<PIN2NUM(pin));
+void gpioToggle (pin_t pin){
+
+	*((uint32_t*)BITBAND_REGADDR((PORT2GPIOADDR(PIN2PORT(pin))->PTOR) , PIN2NUM(pin))) = 1;
 }
 
-bool gpioRead (pin_t pin)
-{
-//	return ((GPIO_Ports[PIN2PORT(pin)]->PDIR & (HIGH<<PIN2NUM(pin)))>>PIN2NUM(pin));
-	return GPIO_Ports[PIN2PORT(pin)]->PDIR & (HIGH<<PIN2NUM(pin));
+void gpioWrite (pin_t pin, bool value){
+
+	*((uint32_t*)BITBAND_REGADDR((PORT2GPIOADDR(PIN2PORT(pin))->PDOR) , PIN2NUM(pin))) = value;
 }
 
-/*******************************************************************************
- *******************************************************************************
-                        LOCAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
-
-__ISR__ PORTA_IRQHandler (void)
-{
-#if DEBUG_GPIO
-D_DEBUG_TP_SET
-#endif
-	for (uint8_t i = 0; i < 32; i++) // Very slow, there are better ways such as CLZ
-		if (BITGET(PORTA->ISFR, i))
-		{
-			PORTA->PCR[i] |= PORT_PCR_ISF(HIGH);
-			if(irqFuns[PA][i] != NULL)
-				irqFuns[PA][i]();
-		}
-#if DEBUG_GPIO
-D_DEBUG_TP_CLR
-#endif
+bool gpioIRQ (pin_t pin, uint8_t irqMode, pinIrqFun_t irqFun){
+	if (irqFun == 0 && irqMode != GPIO_IRQ_MODE_DISABLE){
+		return 1;
+	}
+	PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)] = (PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)] & ~PORT_PCR_IRQC_MASK ) | PORT_PCR_IRQC(irqMode);
+	switch PIN2PORT(pin){
+	case PA:
+			PORTA_CBs[PIN2NUM(pin)] = irqFun;
+			break;
+	case PB:
+			PORTB_CBs[PIN2NUM(pin)] = irqFun;
+			break;
+	case PC:
+			PORTC_CBs[PIN2NUM(pin)] = irqFun;
+			break;
+	case PD:
+			PORTD_CBs[PIN2NUM(pin)] = irqFun;
+			break;
+	case PE:
+			PORTE_CBs[PIN2NUM(pin)] = irqFun;
+			break;
+	default:
+			break;
+	}
+	if (irqMode != GPIO_IRQ_MODE_DISABLE){
+		NVIC_EnableIRQ(PORTA_IRQn + PIN2PORT(pin));
+	}
+	return 0;
 }
 
-__ISR__ PORTB_IRQHandler (void)
-{
-#if DEBUG_GPIO
-D_DEBUG_TP_SET
-#endif
-	for (uint8_t i = 0; i < 32; i++)
-		if (BITGET(PORTB->ISFR, i))
-		{
-			PORTB->PCR[i] |= PORT_PCR_ISF(HIGH);
-			if(irqFuns[PB][i] != NULL)
-				irqFuns[PB][i]();
-		}
-#if DEBUG_GPIO
-D_DEBUG_TP_CLR
-#endif
+
+void PORTA_IRQHandler(void){
+	uint32_t IRQreg = PORT2ADDR(PA)->ISFR;
+	PORT2ADDR(PA)->ISFR = 0xFFFFFFFFU;
+
+	switch (IRQreg){
+	case PIN0:
+			PORTA_CBs[0]();
+			break;
+	case PIN1:
+			PORTA_CBs[1]();
+			break;
+	case PIN2:
+			PORTA_CBs[2]();
+			break;
+	case PIN3:
+			PORTA_CBs[3]();
+			break;
+	case PIN4:
+			PORTA_CBs[4]();
+			break;
+	case PIN5:
+			PORTA_CBs[5]();
+			break;
+	case PIN6:
+			PORTA_CBs[6]();
+			break;
+	case PIN7:
+			PORTA_CBs[7]();
+			break;
+	case PIN8:
+			PORTA_CBs[8]();
+			break;
+	case PIN9:
+			PORTA_CBs[9]();
+			break;
+	case PIN10:
+			PORTA_CBs[10]();
+			break;
+	case PIN11:
+			PORTA_CBs[11]();
+			break;
+	case PIN12:
+			PORTA_CBs[12]();
+			break;
+	default:
+			break;
+	}
+
 }
 
-__ISR__ PORTC_IRQHandler (void)
-{
-#if DEBUG_GPIO
-D_DEBUG_TP_SET
-#endif
-	for (uint8_t i = 0; i < 32; i++)
-		if (BITGET(PORTC->ISFR, i))
-		{
-			PORTC->PCR[i] |= PORT_PCR_ISF(HIGH);
-			if(irqFuns[PC][i] != NULL)
-				irqFuns[PC][i]();
-		}
-#if DEBUG_GPIO
-D_DEBUG_TP_CLR
-#endif
+void PORTB_IRQHandler(void){
+	uint32_t IRQreg = PORT2ADDR(PB)->ISFR;
+	PORT2ADDR(PB)->ISFR = 0xFFFFFFFFU;
+
+	switch (IRQreg){
+	case PIN0:
+		PORTB_CBs[0]();
+		break;
+	case PIN1:
+		PORTB_CBs[1]();
+		break;
+	case PIN2:
+		PORTB_CBs[2]();
+		break;
+	case PIN3:
+		PORTB_CBs[3]();
+		break;
+	case PIN4:
+		PORTB_CBs[4]();
+		break;
+	case PIN5:
+		PORTB_CBs[5]();
+		break;
+	case PIN6:
+		PORTB_CBs[6]();
+		break;
+	case PIN7:
+		PORTB_CBs[7]();
+		break;
+	case PIN8:
+		PORTB_CBs[8]();
+		break;
+	case PIN9:
+		PORTB_CBs[9]();
+		break;
+	case PIN10:
+		PORTB_CBs[10]();
+		break;
+	case PIN11:
+		PORTB_CBs[11]();
+		break;
+	case PIN12:
+		PORTB_CBs[12]();
+		break;
+	default:
+		break;
+
+	}
+
 }
+void PORTC_IRQHandler(void){
+	uint32_t IRQreg = PORT2ADDR(PC)->ISFR;
+	PORT2ADDR(PC)->ISFR = 0xFFFFFFFFU;
 
-__ISR__ PORTD_IRQHandler (void)
-{
-#if DEBUG_GPIO
-D_DEBUG_TP_SET
-#endif
-	for (uint8_t i = 0; i < 32; i++)
-		if (BITGET(PORTD->ISFR, i))
-		{
-			PORTD->PCR[i] |= PORT_PCR_ISF(HIGH);
-			if(irqFuns[PD][i] != NULL)
-				irqFuns[PD][i]();
-		}
-#if DEBUG_GPIO
-D_DEBUG_TP_CLR
-#endif
+	switch (IRQreg){
+	case PIN0:
+		PORTC_CBs[0]();
+		break;
+	case PIN1:
+		PORTC_CBs[1]();
+		break;
+	case PIN2:
+		PORTC_CBs[2]();
+		break;
+	case PIN3:
+		PORTC_CBs[3]();
+		break;
+	case PIN4:
+		PORTC_CBs[4]();
+		break;
+	case PIN5:
+		PORTC_CBs[5]();
+		break;
+	case PIN6:
+		PORTC_CBs[6]();
+		break;
+	case PIN7:
+		PORTC_CBs[7]();
+		break;
+	case PIN8:
+		PORTC_CBs[8]();
+		break;
+	case PIN9:
+		PORTC_CBs[9]();
+		break;
+	case PIN10:
+		PORTC_CBs[10]();
+		break;
+	case PIN11:
+		PORTC_CBs[11]();
+		break;
+	case PIN12:
+		PORTC_CBs[12]();
+		break;
+	default:
+		break;
+
+	}
+
 }
+void PORTD_IRQHandler(void){
+	uint32_t IRQreg = PORT2ADDR(PD)->ISFR;
+	PORT2ADDR(PD)->ISFR = 0xFFFFFFFFU;
 
-__ISR__ PORTE_IRQHandler (void)
-{
-#if DEBUG_GPIO
-D_DEBUG_TP_SET
-#endif
-	for (uint8_t i = 0; i < 32; i++)
-		if (BITGET(PORTE->ISFR, i))
-		{
-			PORTE->PCR[i] |= PORT_PCR_ISF(HIGH);
-			if(irqFuns[PE][i] != NULL)
-				irqFuns[PE][i]();
-		}
-#if DEBUG_GPIO
-D_DEBUG_TP_CLR
-#endif
+	switch (IRQreg){
+	case PIN0:
+		PORTD_CBs[0]();
+		break;
+	case PIN1:
+		PORTD_CBs[1]();
+		break;
+	case PIN2:
+		PORTD_CBs[2]();
+		break;
+	case PIN3:
+		PORTD_CBs[3]();
+		break;
+	case PIN4:
+		PORTD_CBs[4]();
+		break;
+	case PIN5:
+		PORTD_CBs[5]();
+		break;
+	case PIN6:
+		PORTD_CBs[6]();
+		break;
+	case PIN7:
+		PORTD_CBs[7]();
+		break;
+	case PIN8:
+		PORTD_CBs[8]();
+		break;
+	case PIN9:
+		PORTD_CBs[9]();
+		break;
+	case PIN10:
+		PORTD_CBs[10]();
+		break;
+	case PIN11:
+		PORTD_CBs[11]();
+		break;
+	case PIN12:
+		PORTD_CBs[12]();
+		break;
+	default:
+		break;
+
+	}
 }
+void PORTE_IRQHandler(void){
+	uint32_t IRQreg = PORT2ADDR(PE)->ISFR;
+	PORT2ADDR(PE)->ISFR = 0xFFFFFFFFU;
+	switch (IRQreg){
+	case PIN0:
+		PORTE_CBs[0]();
+		break;
+	case PIN1:
+		PORTE_CBs[1]();
+		break;
+	case PIN2:
+		PORTE_CBs[2]();
+		break;
+	case PIN3:
+		PORTE_CBs[3]();
+		break;
+	case PIN4:
+		PORTE_CBs[4]();
+		break;
+	case PIN5:
+		PORTE_CBs[5]();
+		break;
+	case PIN6:
+		PORTE_CBs[6]();
+		break;
+	case PIN7:
+		PORTE_CBs[7]();
+		break;
+	case PIN8:
+		PORTE_CBs[8]();
+		break;
+	case PIN9:
+		PORTE_CBs[9]();
+		break;
+	case PIN10:
+		PORTE_CBs[10]();
+		break;
+	case PIN11:
+		PORTE_CBs[11]();
+		break;
+	case PIN12:
+		PORTE_CBs[12]();
+		break;
+	default:
+		break;
 
-// Helper functions ////////////////////////////////////////////////////////////
+	}
 
-uint8_t PinBit2Num (uint32_t pin)
-{
-	uint8_t i = 0;
-	while (pin >> i++);
-	return i;
 }
-
-/******************************************************************************/

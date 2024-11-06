@@ -1,12 +1,8 @@
-/***************************************************************************//**
-  @file     uart.h
-  @brief    UART driver for K64F. Blocking, Non-Blocking and using FIFO feature
-  @author   Group 4: - Oms, Mariano
-                     - Solari Raigoso, Agustín
-                     - Wickham, Tomás
-                     - Vieira, Valentin Ulises
-  @note     Based on the work of Daniel Jacoby
- ******************************************************************************/
+/***************************************************************************/ /**
+   @file     UART.c
+   @brief    UART Driver for K64F. Non-Blocking and using FIFO feature
+   @author   Nicol�s Magliola
+  ******************************************************************************/
 
 #ifndef _UART_H_
 #define _UART_H_
@@ -15,80 +11,47 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <stdbool.h>
 #include <stdint.h>
-
-#include "cqueue.h"
+#include <stdbool.h>
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define UART_MAX_IDS		UART_CANT_IDS
-#define UART_FREQUENCY_HZ	1500U
-#define UART_BUFFER_SIZE	QUEUE_MAX_SIZE
+#define UART_CANT_IDS 5
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef unsigned char uchar_t;
-typedef uint8_t uart_register_t;
+typedef enum
+{
+	UARTID0,
+	UARTID1,
+	UARTID2,
+	UARTID3,
+	UARTID4,
+	UARTID5
+};
 
-typedef enum {
-	UART_PARITY_EVEN,
-	UART_PARITY_ODD,
-	UART_PARITY_NONE
-} uart_parity_t;
+typedef enum
+{
+	TX,
+	RX,
+	TXRX
+} UARTMode_t;
 
-typedef enum {
-	UART_MODE_8,
-	UART_MODE_9
-} uart_mode_t;
-
-typedef enum {
-	UART_STOPS_1,
-	UART_STOPS_2
-} uart_stops_t;
-
-typedef enum {
-	UART_RX_ENABLED,
-	UART_TX_ENABLED,
-	UART_RX_TX_ENABLED
-} uart_rx_tx_t;
-
-typedef enum {
-	UART_FIFO_DISABLED,
-	UART_FIFO_RX_ENABLED,
-	UART_FIFO_TX_ENABLED,
-	UART_FIFO_RX_TX_ENABLED
-} uart_fifo_t;
-
-typedef enum {
-	UART_ISR_IRQ,
-	UART_ISR_PERIODIC
-} uart_isr_t;
-
-typedef enum {
-	UART0_ID,
-	UART1_ID,
-	UART2_ID,
-	UART3_ID,
-	UART4_ID,
-	UART5_ID,
-
-	UART_CANT_IDS
-} uart_id_t;
-
-typedef struct {
-    uint32_t		baudrate;
-	uart_mode_t		mode;
-	uart_parity_t	parity;
-	uart_stops_t	stops;
-	uart_rx_tx_t	RxTx;
-	uart_fifo_t		fifo;
-	uart_isr_t		isr;
+typedef struct
+{
+	bool IRQEnabled;
+	bool oddParity;
+	uint32_t baudrate;
+	UARTMode_t uartMode;
 } uart_cfg_t;
+
+/*******************************************************************************
+ * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
+ ******************************************************************************/
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -98,25 +61,22 @@ typedef struct {
  * @brief Initialize UART driver
  * @param id UART's number
  * @param config UART's configuration (baudrate, parity, etc.)
- * @return Initialization succeed
-*/
-bool uartInit (uart_id_t id, uart_cfg_t config);
-
-// Non-Blocking Services ///////////////////////////////////////////////////////
+ */
+bool uartInit(uint8_t id, uart_cfg_t config);
 
 /**
  * @brief Check if a new byte was received
  * @param id UART's number
- * @return A new byte has being received
-*/
-uint8_t uartIsRxMsg (uart_id_t id);
+ * @return 1 if the RX FIFO has something
+ */
+uint8_t uartIsRxMsg(uint8_t id);
 
 /**
  * @brief Check how many bytes were received
  * @param id UART's number
  * @return Quantity of received bytes
-*/
-uint8_t uartGetRxMsgLength (uart_id_t id);
+ */
+uint32_t uartGetRxMsgLength(uint8_t id);
 
 /**
  * @brief Read a received message. Non-Blocking
@@ -124,8 +84,8 @@ uint8_t uartGetRxMsgLength (uart_id_t id);
  * @param msg Buffer to paste the received bytes
  * @param cant Desired quantity of bytes to be pasted
  * @return Real quantity of pasted bytes
-*/
-uint8_t uartReadMsg (uart_id_t id, uchar_t* msg, uint8_t cant);
+ */
+uint32_t uartReadMsg(uint8_t id, uint8_t *msg, uint32_t cant);
 
 /**
  * @brief Write a message to be transmitted. Non-Blocking
@@ -133,17 +93,17 @@ uint8_t uartReadMsg (uart_id_t id, uchar_t* msg, uint8_t cant);
  * @param msg Buffer with the bytes to be transfered
  * @param cant Desired quantity of bytes to be transfered
  * @return Real quantity of bytes to be transfered
-*/
-uint8_t uartWriteMsg (uart_id_t id, const uchar_t* msg, uint8_t cant);
+ */
+uint8_t uartWriteMsg(uint8_t id, const uint8_t *msg, uint8_t cant);
+
+uint8_t uartWriteString(uint8_t id, const uint8_t *msg);
 
 /**
  * @brief Check if all bytes were transfered
  * @param id UART's number
  * @return All bytes were transfered
-*/
-uint8_t uartIsTxMsgComplete (uart_id_t id);
-
-// Blocking Services ///////////////////////////////////////////////////////////
+ */
+uint8_t uartIsTxMsgComplete(uint8_t id);
 
 /*******************************************************************************
  ******************************************************************************/
