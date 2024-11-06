@@ -6,7 +6,7 @@
  */
 
 
-#include "ftm.h"
+#include "FTM.h"
 
 
 void FTM_Init(void)

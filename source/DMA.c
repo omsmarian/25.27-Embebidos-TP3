@@ -5,7 +5,7 @@
  *      Author: asolari
  */
 
-#include "dma.h"
+#include "DMA.h"
 
 static callback_t callback[16] = {0};
 
@@ -165,6 +165,12 @@ DMATranfSize_t DMA_GetDestTransfSize(DMAChannel_t chn)
 {
 	return (DMA0->TCD[chn].ATTR & DMA_ATTR_DSIZE_MASK) >> DMA_ATTR_DSIZE_SHIFT;  // Return destination transfer size
 }
+
+void DMA_SetDestLastAddrOffset(DMAChannel_t chn, int32_t offset)
+{
+	DMA0->TCD[chn].DLAST_SGA = offset;  // Set destination last address offset
+}
+
 
 // Sets the minor loop transfer count, determining the data amount per minor loop cycle
 void DMA_SetMinorLoopTransCount(DMAChannel_t chn, uint32_t MinorLoopSize)

@@ -5,7 +5,7 @@
  *      Author: asolari
  */
 
-#include "queue.h"
+#include "Queue.h"
 
 queuedata_t getNext(queue_t *queue) {
 	// If the queue is empty, return 0
