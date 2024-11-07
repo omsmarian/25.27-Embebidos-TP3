@@ -8783,7 +8783,7 @@ typedef struct {
 /** Array initializer of PIT peripheral base pointers */
 #define PIT_BASE_PTRS                            { PIT }
 /** Interrupt vectors for the PIT peripheral type */
-#define PIT_IRQS                                 { { PIT0_IRQn, PIT1_IRQn, PIT2_IRQn, PIT3_IRQn } }
+#define PIT_IRQS                                 { PIT0_IRQn, PIT1_IRQn, PIT2_IRQn, PIT3_IRQn }
 
 /*!
  * @}

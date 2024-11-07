@@ -1,53 +1,57 @@
-/***************************************************************************/ /**
-   @file     +Nombre del archivo (ej: template.h)+
-   @brief    +Descripcion del archivo+
-   @author   +Nombre del autor (ej: Salvador Allende)+
-  ******************************************************************************/
+/***************************************************************************//**
+  @file     converter.h
+  @brief    AD and DA converter driver for K64F, using ADC and DAC peripherals
+  @author   Group 4: - Oms, Mariano
+                     - Solari Raigoso, Agustín
+                     - Wickham, Tomás
+                     - Vieira, Valentin Ulises
+ ******************************************************************************/
 
-#ifndef _FSKMOD_H_
-#define _FSKMOD_H_
+#ifndef _CONVERTER_H_
+#define _CONVERTER_H_
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "Queue.h"
 #include <stdint.h>
 #include <stdbool.h>
+
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
+
+#define DEVELOPMENT_MODE			1
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-/*******************************************************************************
- * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
- ******************************************************************************/
+typedef unsigned char uchar_t;
 
-// +ej: extern unsigned int anio_actual;+
+typedef enum {
+	ADC,
+	DAC,
+	ADC_DAC // Both
+} converter_type_t;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
 /**
- * @brief TODO: completar descripcion
- * @param param1 Descripcion parametro 1
- * @param param2 Descripcion parametro 2
- * @return Descripcion valor que devuelve
+ * @brief Initialize the converter(s) module(s)
+ * @return Initialization succeed
  */
-// +ej: char lcd_goto (int fil, int col);+
+bool converterInit (converter_type_t type);
 
-/**
- * @brief
- */
-void initFSKMod(void);
+bool converterStart (void);
 
-void putArrayFSKMod(queuedata_t *data, uint32_t dataAmount);
+bool converterStatus (void);
+
+bool converterGetData (void);
 
 /*******************************************************************************
  ******************************************************************************/
 
-#endif // _FSKMOD_H_
+#endif // _SERIAL_H_

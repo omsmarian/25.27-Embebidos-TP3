@@ -46,7 +46,7 @@
 #if defined (__cplusplus)
 #ifdef __REDLIB__
 #error Redlib does not support C++
-#elsea
+#else
 //*****************************************************************************
 //
 // The entry point for the C++ library startup

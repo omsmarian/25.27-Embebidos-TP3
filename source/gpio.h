@@ -1,7 +1,10 @@
 /***************************************************************************//**
   @file     gpio.h
   @brief    Simple GPIO Pin services, similar to Arduino
-  @author   Nicolás Magliola
+  @author   Group 4: - Oms, Mariano
+                     - Solari Raigoso, Agustín
+                     - Wickham, Tomás
+                     - Vieira, Valentin Ulises
  ******************************************************************************/
 
 #ifndef _GPIO_H_
@@ -14,13 +17,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
-
-// Ports
-enum { PA, PB, PC, PD, PE };
 
 // Convert port and number into pin ID
 // Ex: PTB5  -> PORTNUM2PIN(PB,5)  -> 0x25
@@ -28,8 +27,6 @@ enum { PA, PB, PC, PD, PE };
 #define PORTNUM2PIN(p,n)    (((p)<<5) + (n))
 #define PIN2PORT(p)         (((p)>>5) & 0x07)
 #define PIN2NUM(p)          ((p) & 0x1F)
-#define PORT2ADDR(x) ((PORT_Type*)(PORTA_BASE + (((x)<<12u) & 0x0000F000u)))
-#define PORT2GPIOADDR(x) ((GPIO_Type*)(GPIOA_BASE + (((x) << 6u) & 0x000001C0u)))
 
 // Modes
 #ifndef INPUT
@@ -37,40 +34,64 @@ enum { PA, PB, PC, PD, PE };
 #define OUTPUT              1
 #define INPUT_PULLUP        2
 #define INPUT_PULLDOWN      3
-#define FILTER_ENABLE		4
 #endif // INPUT
-
 
 // Digital values
 #ifndef LOW
-#define LOW     0
-#define HIGH    1
+#define LOW     			0
+#define HIGH    			1
 #endif // LOW
-
-
-// IRQ modes
-enum {
-    GPIO_IRQ_MODE_DISABLE = 0,
-    GPIO_IRQ_MODE_RISING_EDGE = 0b1001,
-    GPIO_IRQ_MODE_FALLING_EDGE = 0b1010,
-    GPIO_IRQ_MODE_BOTH_EDGES = 0b1011,
-
-    GPIO_IRQ_CANT_MODES
-};
-
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
 typedef uint8_t pin_t;
+typedef bool bit_t;
+typedef uint8_t byte_t;
+
+typedef struct {
+	uint8_t port    : 3;
+	uint8_t num		: 5;
+} PINData_t;
+
+// Ports
+enum { PA, PB, PC, PD, PE };
+
+// IRQ modes
+enum {
+    GPIO_IRQ_MODE_DISABLE,
+    GPIO_IRQ_MODE_RISING_EDGE,
+    GPIO_IRQ_MODE_FALLING_EDGE,
+    GPIO_IRQ_MODE_BOTH_EDGES,
+
+    GPIO_IRQ_CANT_MODES
+};
+
+typedef enum {
+	PORT_mAnalog,
+	PORT_mGPIO,
+	PORT_mAlt2,
+	PORT_mAlt3,
+	PORT_mAlt4,
+	PORT_mAlt5,
+	PORT_mAlt6,
+	PORT_mAlt7
+} PORTMux_t;
+
+typedef enum {
+	PORT_eDisabled				= 0x00,
+	PORT_eDMARising				= 0x01,
+	PORT_eDMAFalling			= 0x02,
+	PORT_eDMAEither				= 0x03,
+	PORT_eInterruptDisasserted	= 0x08,
+	PORT_eInterruptRising		= 0x09,
+	PORT_eInterruptFalling		= 0x0A,
+	PORT_eInterruptEither		= 0x0B,
+	PORT_eInterruptAsserted		= 0x0C
+} PORTEvent_t;
 
 typedef void (*pinIrqFun_t)(void);
-
-
-/*******************************************************************************
- * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
- ******************************************************************************/
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -84,7 +105,7 @@ typedef void (*pinIrqFun_t)(void);
 void gpioMode (pin_t pin, uint8_t mode);
 
 /**
- * @brief Configures how the pin reacts when an IRQ event ocurrs
+ * @brief Configures how the pin reacts when an IRQ event occurs
  * @param pin the pin whose IRQ mode you wish to set (according PORTNUM2PIN)
  * @param irqMode disable, risingEdge, fallingEdge or bothEdges
  * @param irqFun function to call on pin event
@@ -95,7 +116,7 @@ bool gpioIRQ (pin_t pin, uint8_t irqMode, pinIrqFun_t irqFun);
 /**
  * @brief Write a HIGH or a LOW value to a digital pin
  * @param pin the pin to write (according PORTNUM2PIN)
- * @param val Desired value (HIGH or LOW)
+ * @param value Desired value (HIGH or LOW)
  */
 void gpioWrite (pin_t pin, bool value);
 
@@ -111,7 +132,6 @@ void gpioToggle (pin_t pin);
  * @return HIGH or LOW
  */
 bool gpioRead (pin_t pin);
-
 
 /*******************************************************************************
  ******************************************************************************/

@@ -1,6 +1,6 @@
 /***************************************************************************//**
-  @file     App.c
-  @brief    Application functions
+  @file     timer.c
+  @brief    Timer driver. Simple implementation, support multiple timers
   @author   Group 4: - Oms, Mariano
                      - Solari Raigoso, Agustín
                      - Wickham, Tomás
@@ -12,30 +12,33 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-
-#include "adc.h"
-#include "board.h"
 #include "debug.h"
-#include "macros.h"
-#include "serial.h"
+#include "pisr.h"
 #include "timer.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-/*******************************************************************************
- * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
- ******************************************************************************/
+#define DEVELOPMENT_MODE		1
 
-static ticks_t tim_adc;
+#define TIMER_FREQUENCY_HZ		(1000000/TIMER_TICK_US)
+#define TIMER_TICKS2MS(ticks)	((ticks)*TIMER_TICK_US/1000)
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
+
+/**
+ * @brief Periodic service
+ */
+static void timer_isr(void);
+
+/*******************************************************************************
+ * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
+static volatile ticks_t timer_main_counter, timer_mark;
 
 /*******************************************************************************
  *******************************************************************************
@@ -43,51 +46,63 @@ static ticks_t tim_adc;
  *******************************************************************************
  ******************************************************************************/
 
-/**
- * @brief Initialize the application
- * @note This function is called once at the beginning of the main program
- */
-void App_Init (void)
+void timerInit(void)
 {
-	ADC_Init(ADC0_ID, (adc_cfg_t){ ADC_TRIGG_PDB, ADC_PSC_x1, ADC_BITS_12, true, ADC_CYCLES_24, ADC_TAPS_8, false });
-	ADC_Start(ADC0_ID, (adc_cfg_ch_t){ ADC_MUX_A, true, false, 0, NULL });
-
-	serialInit();
-
-//	debugInit();
-
-	timerInit();
-	tim_adc = timerStart(TIMER_MS2TICKS(1000));
+    static bool yaInit = false;
+    if (yaInit)
+        return;
+    
+    pisrRegister(timer_isr, PISR_FREQUENCY_HZ / TIMER_FREQUENCY_HZ); // init peripheral
+    
+    yaInit = true;
 }
 
-//void ADC_PISR (void);
-
-/**
- * @brief Run the application
- * @note This function is called constantly in an infinite loop
- */
-void App_Run (void)
+ticks_t timerStart(ticks_t ticks)
 {
-	static adc_mux_t mux = ADC_MUX_A;
-	char raw[30];
-	adc_data_t data = 0;
-	uint8_t len = 0;
+    ticks_t now_copy;
+    
+    if (ticks < 0)
+        ticks = 0; // truncate min wait time
+    
+    //disable_interrupts();
+    now_copy = timer_main_counter; // esta copia debe ser atomic!!
+    //enable_interrupts();
 
-	// ADC_Start(ADC0_ID, ADC_MUX_A, true, false, 0, NULL);
+    now_copy += ticks;
 
-	if(timerExpired(tim_adc) && ADC_IsReady(ADC0_ID, mux))
-	{
-		data = ADC_GetData(ADC0_ID, mux);
-		len = sprintf(raw, "%d\n", data);
+    return now_copy;
+}
 
-		// serialWriteData((uchar_t*)&raw, sizeof(raw));
-		serialWriteDataBlocking((uchar_t*)&raw, len);
+bool timerExpired(ticks_t timeout)
+{
+    ticks_t now_copy;
 
-		tim_adc = timerStart(TIMER_MS2TICKS(1));
+    //disable_interrupts();
+    now_copy = timer_main_counter; // esta copia debe ser atomic!!
+    //enable_interrupts();
 
-		mux = (mux + 1) % ADC_CANT_MUXS;
-		ADC_Start(ADC0_ID, (adc_cfg_ch_t){ mux, true, false, 0, NULL });
-	}
+    now_copy -= timeout;
+    return (now_copy >= 0);
+}
+
+void timerDelay(ticks_t ticks)
+{
+    ticks_t tim;
+    
+    tim = timerStart(ticks);
+    while (!timerExpired(tim))
+    {
+        // wait...
+    }
+}
+
+uint32_t timerCounter(void)
+{
+	ticks_t diff = timer_main_counter-timer_mark;
+
+	timer_mark = timer_main_counter;
+
+	return TIMER_TICKS2MS(diff);
 }
 
 /*******************************************************************************
@@ -96,12 +111,15 @@ void App_Run (void)
  *******************************************************************************
  ******************************************************************************/
 
-void updateOutgoing (void)														// Send data to the serial port
+static void timer_isr(void)
 {
-}
-
-void updateIncoming (void)														// Receive data from the serial port
-{
+#if DEBUG_TIMER
+P_DEBUG_TP_SET
+#endif
+    ++timer_main_counter; // update main counter
+#if DEBUG_TIMER
+P_DEBUG_TP_CLR
+#endif
 }
 
 /******************************************************************************/
