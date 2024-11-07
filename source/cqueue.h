@@ -29,8 +29,8 @@
 
 // Invalid data for the queue //////////////////////////////////////////////////
 
-#define QUEUE_INVALID_ID	255													// Complete according to QUEUES_MAX_CANT
-#define INVALID_DATA		0xFF												// Complete with your invalid data, according to data_t
+#define QUEUE_INVALID_ID	(QUEUES_MAX_CANT)
+#define INVALID_DATA		NULL
 
 #define QUEUE_OVERFLOW		(QUEUE_MAX_SIZE + 1)
 #define QUEUE_UNDERFLOW		(INVALID_DATA)
@@ -41,9 +41,14 @@
 
 // Data types for the queue ////////////////////////////////////////////////////
 
-typedef uint8_t queue_id_t;														// Complete according to QUEUES_MAX_CANT
-typedef unsigned char data_t;													// Complete with your data type
-typedef uint8_t count_t;														// Complete according to QUEUE_MAX_SIZE
+typedef size_t queue_id_t;
+typedef void* data_t;															// Supports any data type
+typedef size_t count_t;
+
+typedef enum {
+	QUEUE_READ,
+	QUEUE_WRITE
+} queue_access_t;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -51,9 +56,17 @@ typedef uint8_t count_t;														// Complete according to QUEUE_MAX_SIZE
 
 /**
  * @brief Request a queue (initialize)
+ * @param size Size of the queue
+ * @param data_size Size of the data type
  * @return ID of the queue to use
  */
-queue_id_t queueInit (void);
+queue_id_t queueInit (count_t size, uint8_t data_size);
+
+/**
+ * @brief Delete a queue
+ * @param id Queue ID
+ */
+void queueDelete(queue_id_t id);
 
 /**
  * @brief Inserts an element at the back of the queue
@@ -71,6 +84,17 @@ count_t queuePush (queue_id_t id, data_t data);
  * @note If the queue is empty, the data is not pulled and QUEUE_UNDERFLOW is returned
  */
 data_t queuePop (queue_id_t id);
+
+/**
+ * @brief Access an element in the queue
+ * @param id Queue ID
+ * @param index Position of the element
+ * @param access Read or write access
+ * @param data Data to be written
+ * @return Data at the specified index
+ * @note If the index is out of bounds, QUEUE_UNDERFLOW is returned
+ */
+data_t queueAccess (queue_id_t id, count_t index, queue_access_t access, data_t data);
 
 /**
  * @brief Access next element
