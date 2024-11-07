@@ -29,7 +29,7 @@ static pinIrqFun_t PORTD_CBs[32];
 static pinIrqFun_t PORTE_CBs[32];
 
 void gpioMode (pin_t pin, uint8_t mode){
-	
+
 	/*	Asi seria con bit-banding
 	*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 10)) = 0;	//Gpio Mode on MUX
 	*((uint32_t*)BITBAND_REGADDR((PORT2ADDR(PIN2PORT(pin))->PCR[PIN2NUM(pin)]) , 9)) = 0;	//

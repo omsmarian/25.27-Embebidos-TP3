@@ -40,7 +40,6 @@ typedef enum
 	PORT_eInterruptEither = 0x0B,
 	PORT_eInterruptAsserted = 0x0C,
 } PORTEvent_t;
-
 /**
  * @brief Initialize the PWM module
  */

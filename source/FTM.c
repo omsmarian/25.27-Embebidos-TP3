@@ -196,7 +196,7 @@ void FTM_DMAMode(FTM_Type *base, FTMChannel_t channel , bool enable)
 								  (FTM_CnSC_DMA(enable));
 }
 
-void FTM_SetInputCaptureSource(FTM_Type *base, FTM_InputCaptureSource_t source)
+void FTM_SetInputCaptureChannelSource(FTM_Type *base, FTM_InputCaptureSource_t source)
 {
 	//Set the input capture source
 	// CLKS - PS
@@ -217,7 +217,7 @@ void FTM_SetInputCaptureSource(FTM_Type *base, FTM_InputCaptureSource_t source)
 	}
 }
 
-FTM_InputCaptureSource_t FTM_GetInputCaptureSource(FTM_Type *base)
+FTM_InputCaptureSource_t FTM_GetInputCaptureChannelSource(FTM_Type *base)
 {
 	switch ((uint32_t)base)
 	{

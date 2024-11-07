@@ -232,7 +232,7 @@ void FTM_DMAMode(FTM_Type *base, FTMChannel_t channel , bool enable);
  * @param base: FTM module to configure
  * @param source: Source to set
  */
-void FTM_SetInputCaptureSource(FTM_Type *base, FTM_InputCaptureSource_t source);
-FTM_InputCaptureSource_t FTM_GetInputCaptureSource(FTM_Type *base);
+void FTM_SetInputCaptureChannelSource(FTM_Type *base, FTM_InputCaptureSource_t source);
+FTM_InputCaptureSource_t FTM_GetInputCaptureChannelSource(FTM_Type *base);
 
 #endif /* FTM_H_ */

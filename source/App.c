@@ -13,6 +13,8 @@
 #include "uart.h"
 #include "FSKMod.h"
 #include "PIT.h"
+#include "FSKDem.h"
+
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
@@ -43,42 +45,41 @@ void delay(uint32_t a)
 void App_Init(void)
 {
   initPIT();
-  uartInit(3, config);
+
   initFSKMod();
+  initFSKDemodulator();
+
+  uartInit(0, config);
+//  uartInit(3, config);
 
   gpioMode(PORTNUM2PIN(PB, 9), OUTPUT);
+  gpioWrite(PORTNUM2PIN(PB, 9), LOW);
 
 }
 
+
+
 uint8_t c1 = 0;
+uint8_t c2 = 0;
+
+
 
 /* Función que se llama constantemente en un ciclo infinito */
 void App_Run(void)
 {
- static bool finished = false;
-
- while (!finished)
- {
-   // Si recibimos algo por UART, lo enviamos por FSK
-   if (uartIsRxMsg(3))
-   {
-		uint8_t c1 = 0b10101010;
-		gpioWrite(PORTNUM2PIN(PB, 9), HIGH);
-		uartReadMsg(3, &c1, 1);
+	if (uartIsRxMsg(0)) {
+		uartReadMsg(0, &c1, 1);
+		gpioToggle(PORTNUM2PIN(PB, 9));
 		putArrayFSKMod(&c1, 1);
-		delay(1000000);
-		gpioWrite(PORTNUM2PIN(PB, 9), LOW);
+	}
 
-   }
+	if(isDataReadyHART())
+	{
+		gpioToggle(PORTNUM2PIN(PB, 9));
+		c2 = getNextValueHART();
+		uartWriteMsg(0, &c2, 1);
+	}
 
-//   // Si recibimos algo por FSK, lo enviamos por UART
-//   if (isDataReadyHART())
-//   {
-//     uint8_t c2 = 'c';
-//     c2 = getNextValueHART();
-//     uartWriteMsg(3, &c2, 1);
-//   }
- }
 }
 
 /*******************************************************************************
