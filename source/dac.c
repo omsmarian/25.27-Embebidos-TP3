@@ -50,6 +50,19 @@ void DAC_Init (void)
 
 	DAC0->C0 = DAC_C0_DACEN_MASK | DAC_C0_DACRFS_MASK | DAC_C0_DACTRGSEL_MASK;
 	DAC1->C0 = DAC_C0_DACEN_MASK | DAC_C0_DACRFS_MASK | DAC_C0_DACTRGSEL_MASK;
+
+
+	DAC0->C1 &= ~(DAC_C1_DMAEN_MASK  | DAC_C1_DACBFMD_MASK | DAC_C1_DACBFEN_MASK );
+	DAC0->C1 |= (DAC_C1_DMAEN(0) |		// DMA disabled
+				DAC_C1_DACBFMD(0) |		// Normal Mode (circular buffer)
+				DAC_C1_DACBFEN(0));		// Buffer Disabled
+
+
+	DAC1->C1 &= ~(DAC_C1_DMAEN_MASK  | DAC_C1_DACBFMD_MASK | DAC_C1_DACBFEN_MASK );
+	DAC1->C1 |= (DAC_C1_DMAEN(0) |		// DMA disabled
+				DAC_C1_DACBFMD(0) |		// Normal Mode (circular buffer)
+				DAC_C1_DACBFEN(0));		// Buffer Disabled
+
 }
 
 void DAC_SetData (DAC_t dac, DACData_t data)
