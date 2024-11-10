@@ -2,10 +2,10 @@
  * dma.c
  *
  *  Created on: 5 nov 2024
- *      Author: asolari
+ *      Author: asolari bassed on the work of jacob
  */
 
-#include "DMA.h"
+#include <dma.h>
 
 static callback_t callback[16] = {0};
 

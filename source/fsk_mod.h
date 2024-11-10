@@ -1,8 +1,11 @@
-/***************************************************************************/ /**
-   @file     +Nombre del archivo (ej: template.h)+
-   @brief    +Descripcion del archivo+
-   @author   +Nombre del autor (ej: Salvador Allende)+
-  ******************************************************************************/
+/***************************************************************************/
+/**
+ @file     fsk_mod.h
+ @brief    Header file for FSK modulation functions
+ @details  This file contains the function prototypes and necessary includes
+ for implementing FSK modulation.
+ @author   asolari
+ ******************************************************************************/
 
 #ifndef _FSKMOD_H_
 #define _FSKMOD_H_
@@ -11,9 +14,10 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "Queue.h"
+#include <queue.h>
 #include <stdint.h>
 #include <stdbool.h>
+
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
@@ -26,25 +30,20 @@
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-// +ej: extern unsigned int anio_actual;+
-
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
 /**
- * @brief TODO: completar descripcion
- * @param param1 Descripcion parametro 1
- * @param param2 Descripcion parametro 2
- * @return Descripcion valor que devuelve
- */
-// +ej: char lcd_goto (int fil, int col);+
-
-/**
- * @brief
+ * @brief Initializes the FSK modulation module.
  */
 void initFSKMod(void);
 
+/**
+ * @brief Puts an array of data into the FSK modulation queue.
+ * @param data Pointer to the data array to be queued.
+ * @param dataAmount The amount of data to be queued.
+ */
 void putArrayFSKMod(queuedata_t *data, uint32_t dataAmount);
 
 /*******************************************************************************

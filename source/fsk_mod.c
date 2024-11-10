@@ -1,36 +1,35 @@
 /***************************************************************************/ /**
-   @file     +Nombre del archivo (ej: template.c)+
-   @brief    +Descripcion del archivo+
-   @author   +Nombre del autor (ej: Salvador Allende)+
+   @file     fsk_mod.c
+   @brief    Source file for FSK modulation functions
+   @details  This file contains the implementation of the FSK modulation functions.
+             It includes the initialization of the FSK modulation module, handling
+             of the modulation queue, and the modulation interrupt service routine.
+   @note     This file uses a lookup table (LUT) for generating the waveform.
   ******************************************************************************/
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "FSKMod.h"
-#include "PIT.h"
-#include "PWM.h"
+#include <fsk_mod.h>
+#include <pit.h>
+#include <pwm.h>
 
-/*******************************************************************************
- * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
- ******************************************************************************/
-
-/*******************************************************************************
- * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
- ******************************************************************************/
-
-/*******************************************************************************
- * VARIABLES WITH GLOBAL SCOPE
- ******************************************************************************/
-
-// +ej: unsigned int anio_actual;+
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+/**
+ * @brief Modulation interrupt service routine.
+ */
 void Mod_PISR(void);
+
+/**
+ * @brief Converts an integer to a binary HART format.
+ * @param num The integer to convert.
+ * @return The binary HART representation of the integer.
+ */
 int intToBinaryHART(int num);
 
 /*******************************************************************************
@@ -141,11 +140,22 @@ static int16_t lut[660] = {
     174, 175, 177, 179, 181, 182, 184,
     186, 188};
 
+/** Queue for FSK modulation data */
 static queue_t FSKModulation_queue = {{0}, 0, 0, false, true};
+
+/** Index for the current modulation word */
 static uint8_t actualIndex = 0;
+
+/** Current modulation word */
 static uint16_t actualModWord;
+
+/** Flag indicating if a word is being sent */
 static bool isSendingWord = false;
+
+/** Parity calculation variable */
 static uint8_t parityCalc = 0;
+
+/** Timer ID for the modulation interrupt */
 static uint8_t Timerid = 0;
 
 /*******************************************************************************
@@ -154,6 +164,9 @@ static uint8_t Timerid = 0;
  *******************************************************************************
  ******************************************************************************/
 
+/**
+ * @brief Initializes the FSK modulation module.
+ */
 void initFSKMod(void)
 {
   PWM_Init();
@@ -163,6 +176,11 @@ void initFSKMod(void)
   startTimer(Timerid);
 }
 
+/**
+ * @brief Puts an array of data into the FSK modulation queue.
+ * @param data Pointer to the data array to be queued.
+ * @param dataAmount The amount of data to be queued.
+ */
 void putArrayFSKMod(queuedata_t *data, uint32_t dataAmount)
 {
   putArray(&FSKModulation_queue, data, dataAmount);
@@ -174,10 +192,16 @@ void putArrayFSKMod(queuedata_t *data, uint32_t dataAmount)
  *******************************************************************************
  ******************************************************************************/
 
-// la interrupcion solo deberia setear el M en cada PIT
+/**
+ * @brief Modulation interrupt service routine.
+ * This function handles the modulation process by setting the appropriate
+ * waveform offset based on the current bit being transmitted.
+ */
 void Mod_PISR(void)
 {
-  // If i'm not sending any word and there is one ready, I charge it on my queue
+	gpioToggle(PORTNUM2PIN(PB, 9));
+
+  // If not sending any word and there is one ready, load it from the queue
   if (isSendingWord == false && (getFillLevel(&FSKModulation_queue) != 0))
   {
     isSendingWord = true;
@@ -185,46 +209,47 @@ void Mod_PISR(void)
     actualIndex = 0;
   }
 
-  // If I started sending a word I'll change M accordingly
+  // If a word is being sent, change the waveform offset accordingly
   if (isSendingWord == true)
   {
     switch (actualIndex)
     {
-		case 0:
-		  PWM_SetWaveformOffset(11); // Start bit
-		  break;
-		case 10:
-		  PWM_SetWaveformOffset(6); // Stop bit
-		  isSendingWord = false;
-		  parityCalc = 0;
-		  break;
-		case 9:
-		{
-		  if (parityCalc == 0)
-		  {
-			PWM_SetWaveformOffset(11);
-		  }
-		  else
-		  {
-			PWM_SetWaveformOffset(6);
-		  }
-		  break;
-		}
-		default:
-		{
-		  int bit = (actualModWord >> (8 - actualIndex)) & 1;
-		  if (bit == 0)
-		  {
-			PWM_SetWaveformOffset(11);
-		  }
-		  else
-		  {
-			parityCalc ^= 1;
-			PWM_SetWaveformOffset(6);
-		  }
-		  break;
-		}
+    case 0:
+//		gpioWrite(PORTNUM2PIN(PB, 9), HIGH);
+      PWM_SetWaveformOffset(11); // Start bit
+      break;
+    case 10:
+      PWM_SetWaveformOffset(6); // Stop bit
+      isSendingWord = false;
+      parityCalc = 0;
+//  	gpioWrite(PORTNUM2PIN(PB, 9), LOW);
+
+      break;
+    case 9:
+      if (parityCalc == 0)
+      {
+        PWM_SetWaveformOffset(11);
+      }
+      else
+      {
+        PWM_SetWaveformOffset(6);
+      }
+      break;
+    default:
+      int bit = (actualModWord >> (8 - actualIndex)) & 1;
+      if (bit == 0)
+      {
+        PWM_SetWaveformOffset(11);
+      }
+      else
+      {
+        parityCalc ^= 1;
+        PWM_SetWaveformOffset(6);
+      }
+      break;
     }
     actualIndex++;
   }
+	gpioToggle(PORTNUM2PIN(PB, 9));
+
 }

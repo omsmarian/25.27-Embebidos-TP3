@@ -5,7 +5,7 @@
  *      Author: asolari
  */
 
-#include "PIT.h"
+#include <pit.h>
 
 // Global variables
 static TIMER_t timer[MAXTIMERS]; // Array of timers

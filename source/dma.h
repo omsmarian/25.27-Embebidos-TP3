@@ -2,7 +2,7 @@
  * dma.h
  *
  *  Created on: 5 nov 2024
- *      Author: asolari
+ *      Author: asolari bassed on the work of jacob
  */
 
 #ifndef DMA_H_

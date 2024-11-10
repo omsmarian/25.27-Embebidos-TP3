@@ -6,7 +6,7 @@
  */
 
 
-#include "PWM.h"
+#include <pwm.h>
 
 uint16_t ticksPerPeriod = 100;
 uint16_t *waveform = 0;

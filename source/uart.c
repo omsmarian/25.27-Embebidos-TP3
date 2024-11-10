@@ -8,11 +8,11 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
+#include <queue.h>
 #include "uart.h"
 #include "MK64F12.h"
 #include "hardware.h"
 #include "config.h"
-#include "Queue.h"
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/

@@ -8,13 +8,13 @@
 #ifndef PWM_H_
 #define PWM_H_
 
+#include <dma.h>
+#include <ftm.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "hardware.h"
 #include "gpio.h"
 
-#include "FTM.h"
-#include "DMA.h"
 
 typedef enum
 {
