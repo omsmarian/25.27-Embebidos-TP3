@@ -21,14 +21,14 @@
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define PDB_FREQUENCY_HZ	1000
+#define PDB_FREQUENCY_HZ	12000
 #define PDB_HZ2TICKS(f)		(PDB_FREQUENCY_HZ / (f))
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef void (*callback_t)(void);
+typedef void (*pdb_callback_t)(void);
 
 typedef enum {
     PDB0_ID,

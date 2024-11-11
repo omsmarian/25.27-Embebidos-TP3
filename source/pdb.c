@@ -25,7 +25,7 @@ typedef struct {
 	pdb_id_t		id;
 	pdb_cfg_t		cfg;
 	pdb_cfg_delay_t	ch_delay[PDB_CANT_CHS][PDB_CANT_DELAYS];
-	callback_t		cb;
+	pdb_callback_t	cb;
 	bool			init;
 } pdb_t; 
 
@@ -80,8 +80,8 @@ bool PDB_Init(pdb_id_t id, pdb_cfg_t cfg)
 									| PDB_SC_LDOK_MASK;							// Update buffered registers
 
 		for (uint8_t i = 0; i < PDB_CANT_CHS; i++)
-			PDB_REG(id, CH[i].C1)	= PDB_C1_BB			(cfg.bb ? 0x3 : 0x0)	// Back-to-back operation
-									| PDB_C1_TOS		(0x3);					// No bypass
+			PDB_REG(id, CH[i].C1)	= PDB_C1_BB			(cfg.bb ? 0x3 : 0x0);	// Back-to-back operation
+
 
 		pdb[id].cfg = cfg;														// Not necessary
 		pdb[id].init = true;
@@ -124,9 +124,10 @@ bool PDB_SetChannelMux(pdb_id_t id, pdb_cfg_mux_t cfg)
 
 	if (status)
 	{
-		PDB_REG(id, CH[cfg.ch].C1) &= ~PDB_C1_EN_MASK;
+		PDB_REG(id, CH[cfg.ch].C1) &= ~PDB_C1_EN_MASK & ~PDB_C1_TOS_MASK;
 		if (cfg.mux != PDB_CANT_PRETRIGGS)
-			PDB_REG(id, CH[cfg.ch].C1) |= PDB_C1_EN(1 << cfg.mux);				// Only one pre-trigger enabled per channel
+			PDB_REG(id, CH[cfg.ch].C1) |= PDB_C1_EN(1 << cfg.mux)				// Only one pre-trigger enabled per channel
+									   |  PDB_C1_TOS(1 << cfg.mux);				// No bypass
 	}
 
 	return status;
@@ -137,7 +138,10 @@ bool PDB_Start(pdb_id_t id)
 	bool status = (id < PDB_CANT_IDS) && pdb[id].init;
 
 	if (status)
+	{
+//		PDB_REG(id, SC) |= PDB_SC_PDBEN_MASK;
 		PDB_REG(id, SC) |= PDB_SC_SWTRIG_MASK;
+	}
 
 	return status;
 }

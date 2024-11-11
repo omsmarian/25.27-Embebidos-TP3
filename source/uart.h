@@ -33,7 +33,7 @@
  ******************************************************************************/
 
 typedef unsigned char uchar_t;
-typedef uint8_t uart_register_t;
+typedef uchar_t uart_reg_t;
 
 typedef enum {
 	UART_PARITY_EVEN,
@@ -134,7 +134,7 @@ uint8_t uartReadMsg (uart_id_t id, uchar_t* msg, uint8_t cant);
  * @param cant Desired quantity of bytes to be transfered
  * @return Real quantity of bytes to be transfered
 */
-uint8_t uartWriteMsg (uart_id_t id, const uchar_t* msg, uint8_t cant);
+uint8_t uartWriteMsg (uart_id_t id, uchar_t* msg, uint8_t cant);
 
 /**
  * @brief Check if all bytes were transfered

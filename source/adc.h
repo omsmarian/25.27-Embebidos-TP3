@@ -26,16 +26,16 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef void (*callback_t)(void);
-typedef uint8_t adc_channel_t; // Channel 0-23
-typedef uint16_t adc_data_t; // Maximum resolution is 16 bits
-
 typedef enum {
 	ADC0_ID,
 	ADC1_ID,
 
 	ADC_CANT_IDS
 } adc_id_t;
+
+typedef void (*adc_callback_t)(const adc_id_t id);
+typedef uint8_t adc_channel_t; // Channel 0-23
+typedef uint16_t adc_data_t; // Maximum resolution is 16 bits
 
 typedef enum {
 	ADC_TRIGG_PDB_EXT,
@@ -109,7 +109,7 @@ typedef struct {
 	bool			ie; // Interrupt enable
 	bool			diff; // Differential mode
 	adc_channel_t	ch;
-	callback_t 		cb;
+	adc_callback_t	cb;
 } adc_cfg_ch_t;
 
 /*******************************************************************************
@@ -122,6 +122,12 @@ typedef struct {
  * @param cfg Configuration for the ADC peripheral
  */
 bool ADC_Init (adc_id_t id, adc_cfg_t cfg);
+
+/**
+ * @brief Delete the ADC peripheral
+ * @param id ADC peripheral to be deleted
+ */
+void ADC_Delete (adc_id_t id);
 
 /**
  * @brief Get the configuration of the ADC peripheral

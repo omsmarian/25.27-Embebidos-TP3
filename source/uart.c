@@ -169,20 +169,31 @@ uint8_t uartGetRxMsgLength (uart_id_t id)
 
 uint8_t uartReadMsg (uart_id_t id, uchar_t* msg, uint8_t cant)
 {
-	uint8_t i = 0;
-	while (i < cant && !queueIsEmpty(rx_queue[id]))
+	uint8_t i = 0, * c;
+
+	while ((i < cant) && !queueIsEmpty(rx_queue[id]))
+	{
+//		c = (uchar_t*)queuePop(rx_queue[id]);
+//		msg[i++] = *c;
 		msg[i++] = queuePop(rx_queue[id]);
+	}
 
 	return i;
 }
 
-uint8_t uartWriteMsg (uart_id_t id, const uchar_t* msg, uint8_t cant)
+uint8_t uartWriteMsg (uart_id_t id, uchar_t* msg, uint8_t cant)
 {
-	uint8_t i = 0;
-	while (i < cant && !queueIsFull(tx_queue[id]))
-		queuePush(tx_queue[id], msg[i++]);
+	uint8_t index = 0, a, i = 0;
 
-	return i;
+	for(; (index < cant) && !queueIsFull(tx_queue[id]); index++)
+	{
+		queuePush(tx_queue[id], msg[index]);
+//		a = *(uint8_t*)queuePop(tx_queue[id]);
+//		a = msg[index];
+//		i++;
+	}
+
+	return index;
 }
 
 uint8_t uartIsTxMsgComplete (uart_id_t id)
@@ -262,15 +273,24 @@ P_DEBUG_TP_CLR
 
 static void update (uart_id_t id)
 {
-	uint8_t count, status = UART_REG(id, S1);									// Always needed (clears status register)
+	uint8_t count, status = UART_REG(id, S1), c, * s = &c;									// Always needed (clears status register)
 
 	count = UART_REG(id, RCFIFO);
 	while(count-- && !queueIsFull(rx_queue[id]))
+	{
+//		*s = UART_REG(id, D);
+//		queuePush(rx_queue[id], (uchar_t*)s);
 		queuePush(rx_queue[id], UART_REG(id, D));
+	}
 
 	count = UART_REG(id, TCFIFO);
 	while((count++ != ((UART_REG(id, PFIFO) & UART_PFIFO_TXFIFOSIZE_MASK) >> UART_PFIFO_TXFIFOSIZE_SHIFT))
-		&& !queueIsEmpty(tx_queue[id])) UART_REG(id, D) = queuePop(tx_queue[id]);
+		&& !queueIsEmpty(tx_queue[id]))
+	{
+//		s = (uchar_t*)queuePop(tx_queue[id]);
+//		UART_REG(id, D) = *s;
+		UART_REG(id, D) = queuePop(tx_queue[id]);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

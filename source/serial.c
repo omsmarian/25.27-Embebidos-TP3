@@ -33,7 +33,7 @@
 
 bool serialInit (void)
 {
-	uart_cfg_t config = {9600,
+	uart_cfg_t config = {1200,
 						 UART_MODE_8,
 						 UART_PARITY_NONE,
 						 UART_STOPS_1,

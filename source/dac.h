@@ -24,14 +24,27 @@
 typedef DAC_Type* DAC_t;
 typedef uint16_t DACData_t;
 
+typedef enum {
+	DAC0_ID,
+	DAC1_ID,
+
+	DAC_CANT_IDS
+} dac_id_t;
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
 /**
  * @brief Initializes the DAC module
+ * @return True if the initialization was successful, false otherwise
  */
 void DAC_Init (void);
+
+/**
+ * @brief Deletes the DAC module
+ */
+void DAC_Delete (DAC_t);
 
 /**
  * @brief Sets the data to be output by the DAC

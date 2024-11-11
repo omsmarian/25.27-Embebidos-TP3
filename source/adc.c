@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 #include "adc.h"
+#include "cqueue.h"
 #include "hardware.h"
 #include "macros.h"
 #include "pdb.h"
@@ -33,12 +34,12 @@
  ******************************************************************************/
 
 typedef struct {
-	adc_id_t		id;
 	adc_cfg_t		cfg;
 	adc_cfg_ch_t	ch_cfg;
-	callback_t		cb[ADC_CANT_MUXS];
-	adc_data_t		data[ADC_CANT_MUXS];
+	adc_callback_t	cb[ADC_CANT_MUXS];
+	// adc_data_t		data[ADC_CANT_MUXS];
 	bool			data_ready[ADC_CANT_MUXS];
+	queue_id_t		queue[ADC_CANT_MUXS];
 	bool			init;
 } adc_t;
 
@@ -97,7 +98,7 @@ bool ADC_Init (adc_id_t id, adc_cfg_t cfg)
 		NVIC_EnableIRQ(ADC_IRQn[id]);
 
 		SIM->SOPT7			|= REG_WRITE(uint32_t, ADC_TriggShift[id * 3],		ADC_TriggMask[id * 3],		cfg.trigg != ADC_TRIGG_PDB)	// Defalut trigger is PDB
-							|  REG_WRITE(uint32_t, ADC_TriggShift[id * 3 + 1],	ADC_TriggMask[id * 3 + 1],	cfg.trigg);
+							|  REG_WRITE(uint32_t, ADC_TriggShift[id * 3 + 2],	ADC_TriggMask[id * 3 + 2],	cfg.trigg);
 
 		ADC_REG(id, CFG1)	|= ADC_CFG1_ADLPC	(cfg.pwr)						// Low-Power Configuration
 							|  ADC_CFG1_ADIV	(cfg.ps)						// Divide ratio used to generate input clock
@@ -115,11 +116,10 @@ bool ADC_Init (adc_id_t id, adc_cfg_t cfg)
 
 		if (cfg.trigg == ADC_TRIGG_PDB)
 		{
-			PDB_Init(PDB0_ID, (pdb_cfg_t) { PDB_PS_1, PDB_MULT_10, PDB_TRIGG_SW, PDB_CONTINUOUS, false, 0 });
-			PDB_SetChannelDelay(PDB0_ID, (pdb_cfg_delay_t){ PDB_Channels[id], PDB_CH_DELAY_0, 2000 });
-			PDB_SetChannelDelay(PDB0_ID, (pdb_cfg_delay_t){ PDB_Channels[id], PDB_CH_DELAY_1, 4000 });
+			PDB_Init(PDB0_ID, (pdb_cfg_t) { PDB_PS_2, PDB_MULT_1, PDB_TRIGG_SW, PDB_CONTINUOUS, false, 0 });
+			PDB_SetChannelDelay(PDB0_ID, (pdb_cfg_delay_t){ PDB_Channels[id], PDB_CH_DELAY_0, 0 });
 
-			// ADC_Start(ADC0_ID, ADC_MUX_A, true, false, 0, NULL);
+//			ADC_Start(ADC0_ID, (adc_cfg_ch_t){ ADC_MUX_A, true, false, 0, NULL });
 
 			PDB_SetChannelMux(PDB0_ID, (pdb_cfg_mux_t){ PDB_CH0, PDB_PRETRIGG_0 });
 			PDB_Start(PDB0_ID);
@@ -130,11 +130,32 @@ bool ADC_Init (adc_id_t id, adc_cfg_t cfg)
 			// PIT_Start((pit_id_t)(cfg.trigg - ADC_TRIGG_PIT0));
 		}
 
+		for (uint8_t mux = 0; mux < ADC_CANT_MUXS; mux++)
+		{
+//			adc[id].queue[mux] = queueInit(QUEUE_MAX_SIZE, sizeof(adc_data_t));
+			adc[id].queue[mux] = queueInit();
+			adc[id].data_ready[mux] = false;
+		}
+
 		adc[id].cfg	= cfg;
 		adc[id].init = true;
 	}
 
 	return adc[id].init;
+}
+
+void ADC_Delete (adc_id_t id)
+{
+	if (id < ADC_CANT_IDS && adc[id].init)
+	{
+		*ADC_Clks[id].clk &= ~ADC_Clks[id].mask;
+		NVIC_DisableIRQ(ADC_IRQn[id]);
+
+//		for (uint8_t mux = 0; mux < ADC_CANT_MUXS; mux++)
+//			queueDelete(adc[id].queue[mux]);
+
+		adc[id].init = false;
+	}
 }
 
 adc_cfg_t* ADC_GetConfig (adc_id_t id)
@@ -161,7 +182,7 @@ bool ADC_Start (adc_id_t id, adc_cfg_ch_t cfg)
 
 	if (status)
 	{
-		SIM->SOPT7 |= REG_WRITE(uint32_t, ADC_TriggMask[id * 3 + 2], ADC_TriggShift[id * 3 + 2], cfg.mux);
+		SIM->SOPT7 |= REG_WRITE(uint32_t, ADC_TriggMask[id * 3 + 1], ADC_TriggShift[id * 3 + 1], cfg.mux);
 		ADC_REG(id, CFG2) = (ADC_REG(id, CFG2) & ~ADC_CFG2_MUXSEL_MASK) | ADC_CFG2_MUXSEL(cfg.mux);
 		ADC_REG(id, SC1[cfg.mux]) = ADC_SC1_AIEN(cfg.ie) | ADC_SC1_DIFF(cfg.diff) | ADC_SC1_ADCH(cfg.ch);
 
@@ -190,7 +211,8 @@ adc_data_t ADC_GetData (adc_id_t id, adc_mux_t mux)
 
 	if ((id < ADC_CANT_IDS) && (mux < ADC_CANT_MUXS))
 	{
-		data = adc[id].data[mux];
+//		data = (adc_data_t*)queuePop(adc[id].queue[mux]);
+		data = queuePop(adc[id].queue[mux]) | queuePop(adc[id].queue[mux]) << 8;
 		adc[id].data_ready[mux] = false;
 	}
 
@@ -214,15 +236,21 @@ static void handler (adc_id_t id)
 P_DEBUG_TP_SET
 #endif
 //	adc_mux_t mux = adc[id].ch_cfg.mux;
+	adc_data_t data;
 
 	for (adc_mux_t mux = ADC_MUX_A; mux < ADC_CANT_MUXS; mux++)
 		if (ADC_REG(id, SC1[mux]) & ADC_SC1_COCO_MASK) // Check which of the conversions just triggered
 		{
-			adc[id].data[mux] = (adc_data_t)ADC_REG(id, R[mux]); // This will clear the COCO bit that is also the interrupt flag
+			// adc[id].data[mux] = (adc_data_t)ADC_REG(id, R[mux]); // This will clear the COCO bit that is also the interrupt flag
+			data = (adc_data_t)ADC_REG(id, R[mux]);
+//			queuePush(adc[id].queue[mux], (adc_data_t*)&data); // This will clear the COCO bit that is also the interrupt flag
+			queuePush(adc[id].queue[mux], data & 0xFF); // This will clear the COCO bit that is also the interrupt flag
+			queuePush(adc[id].queue[mux], data >> 8); // This will clear the COCO bit that is also the interrupt flag
+//			data = *(adc_data_t*)queuePop(adc[id].queue[mux]);
 			adc[id].data_ready[mux] = true;
 
 			if (adc[id].cb[mux] != NULL)
-				adc[id].cb[mux]();
+				adc[id].cb[mux](id);
 
 			// PDB_SetChannelMux(PDB0_ID, (pdb_cfg_mux_t){ PDB_Channels[id], mux });
 		}
