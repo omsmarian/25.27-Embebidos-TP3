@@ -176,6 +176,7 @@ void FSKDemCallback2(void) {
 	switch (stateDEM) {
 	case READ_STATE:
 		if (bitCounter == 8) {
+//			gpioToggle(PORTNUM2PIN(PB, 9));
 			parity |= timeDiff > F0_THRESHHOLD ? 1 : 0;
 			bitCounter = 0;
 			stateDEM = RESET;
@@ -186,7 +187,9 @@ void FSKDemCallback2(void) {
 		break;
 	case RESET:
 		stopTimer(timerID);
-		if (oddParity(output, parity)) {
+		if (oddParity(output, parity))
+		{
+			gpioToggle(PORTNUM2PIN(PB, 9));
 			put(&outputQueue, output);
 		} else {
 			errorFlag = 1;
@@ -227,5 +230,5 @@ static bool oddParity(uint8_t word, uint8_t parity) {
 			parityCalc ^= 1;
 		}
 	}
-	return (parityCalc == parity);
+	return (parityCalc != parity);
 }

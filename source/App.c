@@ -34,18 +34,13 @@ uart_cfg_t config = {
     1200,
     TXRX};
 
-void delay(uint32_t a)
-{
-  while (a)
-  {
-    a--;
-  }
-}
+
 
 
 // OUT FTM PTC1
 // IN CMPP PTC3
 // OUT CMP PTC4
+// FLANCO PTB9
 
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init(void)
@@ -75,24 +70,14 @@ void App_Run(void)
 {
 	if (uartIsRxMsg(0)) {
 		uartReadMsg(0, &c1, 1);
-//		gpioToggle(PORTNUM2PIN(PB, 9));
+		gpioToggle(PORTNUM2PIN(PB, 9));
 		putArrayFSKMod(&c1, 1);
 	}
 
 	if(isDataReadyHART())
 	{
-//		gpioToggle(PORTNUM2PIN(PB, 9));
 		c2 = getNextValueHART();
 		uartWriteMsg(0, &c2, 1);
 	}
 
 }
-
-/*******************************************************************************
- *******************************************************************************
-                        LOCAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
-
-/*******************************************************************************
- ******************************************************************************/

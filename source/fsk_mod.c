@@ -199,7 +199,7 @@ void putArrayFSKMod(queuedata_t *data, uint32_t dataAmount)
  */
 void Mod_PISR(void)
 {
-	gpioToggle(PORTNUM2PIN(PB, 9));
+//	gpioToggle(PORTNUM2PIN(PB, 9));
 
   // If not sending any word and there is one ready, load it from the queue
   if (isSendingWord == false && (getFillLevel(&FSKModulation_queue) != 0))
@@ -226,7 +226,7 @@ void Mod_PISR(void)
 
       break;
     case 9:
-      if (parityCalc == 0)
+      if (parityCalc != 0)
       {
         PWM_SetWaveformOffset(11);
       }
@@ -250,6 +250,6 @@ void Mod_PISR(void)
     }
     actualIndex++;
   }
-	gpioToggle(PORTNUM2PIN(PB, 9));
+//	gpioToggle(PORTNUM2PIN(PB, 9));
 
 }
