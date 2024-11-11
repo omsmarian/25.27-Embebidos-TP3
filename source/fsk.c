@@ -86,13 +86,18 @@ static const float sine_table[] = {
 	0.980785f, 0.985278f, 0.989177f, 0.992480f, 0.995185f, 0.997290f, 0.998795f, 0.999699f
 };
 
-static float coeffs[] = {
-		 -0.002086994263159,-0.006003054525357,-0.008633170414909,-0.001790251586214,
-		    0.02460882704212,   0.0756853298976,   0.1448247875714,   0.2127701317527,
-		     0.2551960820215,   0.2551960820215,   0.2127701317527,   0.1448247875714,
-		     0.0756853298976,  0.02460882704212,-0.001790251586214,-0.008633170414909,
-		  -0.006003054525357,-0.002086994263159
-		};
+//static float coeffs[] = {
+//		 -0.002086994263159,-0.006003054525357,-0.008633170414909,-0.001790251586214,
+//		    0.02460882704212,   0.0756853298976,   0.1448247875714,   0.2127701317527,
+//		     0.2551960820215,   0.2551960820215,   0.2127701317527,   0.1448247875714,
+//		     0.0756853298976,  0.02460882704212,-0.001790251586214,-0.008633170414909,
+//		  -0.006003054525357,-0.002086994263159
+//		};
+
+static float coeffs[] = { 0.000184258321387766,	-0.00221281271600225,	-0.00875721735248610,	-0.0157935638369741,	-0.0125404257819552,
+						0.0140848855293968,	0.0690100446059607,	0.140515735542082,	0.202192975479381,	0.226632240418417,
+						0.202192975479381,	0.140515735542082,	0.0690100446059607,	0.0140848855293968,	-0.0125404257819552,
+						-0.0157935638369741,	-0.00875721735248610,	-0.00221281271600225,	0.000184258321387766};
 
 static const adc_id_t ADC_Channels[FSK_CANT_IDS] = { ADC0_ID, ADC1_ID };
 static const dac_id_t DAC_Channels[FSK_CANT_IDS] = { DAC0_ID, DAC1_ID };
@@ -263,16 +268,40 @@ void FSK_Demod(const fsk_id_t id, const size_t nsamples)
 						bit_check = fsk[id].cmp_samples[cmp_index / 2]
 								  + fsk[id].cmp_samples[cmp_index / 2 + 1]
 								  + fsk[id].cmp_samples[cmp_index / 2 - 1];
-						bit = bit_check > 1;
+						bit = !(bit_check > 1);
 						parity ^= bit;
 						queuePush(fsk[id].adc_bits, bit);
+
+						if (queueSize(fsk[id].adc_bits) == 8 + 1)
+						{
+							queueSize(fsk[id].adc_bits);
+							// if (!parity)
+							// {
+							// 	data = 0;
+							// 	for (uint8_t i = 0; i < 8; i++)
+							// 		data |= queuePop(fsk[id].adc_bits) << i;
+							// 	queuePush(fsk[id].adc_bytes, data);
+							// }
+							// state = STOP;
+							if (parity)
+								state = IDLE;
+						}
 
 						if (queueSize(fsk[id].adc_bits) >= 8 + 2)
 						{
 							queueSize(fsk[id].adc_bits);
-							if (!bit)	{ state = STOP; }
-							else		{ state = IDLE; }
+							// if (!bit)	{ state = STOP; }
+							// else		{ state = IDLE; }
 //							state = STOP;
+							if (bit)
+							{
+								data = 0;
+								for (uint8_t i = 0; i < 8; i++)
+									data |= queuePop(fsk[id].adc_bits) << i;
+									// data |= (fsk[id].cmp_samples[8 + 1 - i] << i);
+								queuePush(fsk[id].adc_bytes, data);
+							}
+							state = IDLE;
 						}
 					}
 					break;
